@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface BookInput {
-  title: string;
-  description?: string;
-  coverImageUrl?: string;
+export interface PdfBundle {
+  vocabListPdfBase64: string;
+  vocabQuizPdfBase64: string;
+  readingQuizPdfBase64: string;
+  answerKeyPdfBase64: string;
 }

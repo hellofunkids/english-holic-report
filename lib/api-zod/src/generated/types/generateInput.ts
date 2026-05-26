@@ -5,9 +5,9 @@
  * Book Quiz Lab — AI Material Generator
  * OpenAPI spec version: 0.2.0
  */
+import type { GenerateInputLevel } from './generateInputLevel';
 
-export interface BookInput {
-  title: string;
-  description?: string;
-  coverImageUrl?: string;
+export interface GenerateInput {
+  chapterTitle: string;
+  level: GenerateInputLevel;
 }
