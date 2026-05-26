@@ -10,6 +10,11 @@ export interface Chapter {
   id: number;
   bookId: number;
   title: string;
+  /**
+     * Student level: elementary4, elementary5, elementary6, middle
+     * @nullable
+     */
+  level?: string | null;
   orderIndex: number;
   createdAt: string;
 }

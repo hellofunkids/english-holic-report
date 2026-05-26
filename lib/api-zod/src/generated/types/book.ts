@@ -11,5 +11,7 @@ export interface Book {
   title: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  coverImageUrl?: string | null;
   createdAt: string;
 }

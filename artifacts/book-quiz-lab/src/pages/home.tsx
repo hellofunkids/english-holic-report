@@ -12,7 +12,7 @@ export default function Home() {
             <BookOpen className="w-10 h-10" />
           </div>
           <h1 className="text-4xl font-extrabold text-primary tracking-tight">Book Quiz Lab</h1>
-          <p className="text-muted-foreground text-lg">Your reading journey starts here</p>
+          <p className="text-muted-foreground text-lg">원서 리딩 퀴즈를 시작해 보세요</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -22,7 +22,7 @@ export default function Home() {
                 <GraduationCap className="w-8 h-8" />
               </div>
               <h2 className="text-2xl font-bold text-primary mb-2">학생 모드</h2>
-              <p className="text-muted-foreground font-medium">Student</p>
+              <p className="text-muted-foreground font-medium">퀴즈 풀기</p>
             </Card>
           </Link>
 
@@ -32,7 +32,7 @@ export default function Home() {
                 <Users className="w-8 h-8" />
               </div>
               <h2 className="text-2xl font-bold text-primary mb-2">선생님 모드</h2>
-              <p className="text-muted-foreground font-medium">Teacher</p>
+              <p className="text-muted-foreground font-medium">관리 및 결과 확인</p>
             </Card>
           </Link>
         </div>

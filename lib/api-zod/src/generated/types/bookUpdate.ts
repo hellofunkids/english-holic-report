@@ -10,4 +10,5 @@ export interface BookUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
+  coverImageUrl?: string;
 }

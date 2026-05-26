@@ -26,14 +26,18 @@ import type {
   Chapter,
   ChapterInput,
   ChapterUpdate,
+  GeneratePdfInput,
   HealthStatus,
   LeaderboardEntry,
+  PdfGenerationResult,
   QuizInput,
   QuizQuestion,
   QuizUpdate,
   StatsSummary,
   Submission,
   SubmissionInput,
+  UploadRequestBody,
+  UploadResponseData,
   VocabInput,
   VocabItem,
   VocabUpdate
@@ -60,7 +64,6 @@ export const getHealthCheckUrl = () => {
 }
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
@@ -1751,4 +1754,147 @@ export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboa
 
 
 
+
+export const getGeneratePdfUrl = (chapterId: number,) => {
+
+
+
+
+  return `/api/chapters/${chapterId}/generate-pdf`
+}
+
+/**
+ * @summary AI-generate 20 MC comprehension questions and produce quiz + answer PDFs
+ */
+export const generatePdf = async (chapterId: number,
+    generatePdfInput: GeneratePdfInput, options?: RequestInit): Promise<PdfGenerationResult> => {
+
+  return customFetch<PdfGenerationResult>(getGeneratePdfUrl(chapterId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generatePdfInput,)
+  }
+);}
+
+
+
+
+export const getGeneratePdfMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generatePdf>>, TError,{chapterId: number;data: BodyType<GeneratePdfInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generatePdf>>, TError,{chapterId: number;data: BodyType<GeneratePdfInput>}, TContext> => {
+
+const mutationKey = ['generatePdf'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generatePdf>>, {chapterId: number;data: BodyType<GeneratePdfInput>}> = (props) => {
+          const {chapterId,data} = props ?? {};
+
+          return  generatePdf(chapterId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GeneratePdfMutationResult = NonNullable<Awaited<ReturnType<typeof generatePdf>>>
+    export type GeneratePdfMutationBody = BodyType<GeneratePdfInput>
+    export type GeneratePdfMutationError = ErrorType<unknown>
+
+    /**
+ * @summary AI-generate 20 MC comprehension questions and produce quiz + answer PDFs
+ */
+export const useGeneratePdf = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generatePdf>>, TError,{chapterId: number;data: BodyType<GeneratePdfInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generatePdf>>,
+        TError,
+        {chapterId: number;data: BodyType<GeneratePdfInput>},
+        TContext
+      > => {
+      return useMutation(getGeneratePdfMutationOptions(options));
+    }
+
+export const getRequestUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned URL to upload a file
+ */
+export const requestUploadUrl = async (uploadRequestBody: UploadRequestBody, options?: RequestInit): Promise<UploadResponseData> => {
+
+  return customFetch<UploadResponseData>(getRequestUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      uploadRequestBody,)
+  }
+);}
+
+
+
+
+export const getRequestUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadRequestBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadRequestBody>}, TContext> => {
+
+const mutationKey = ['requestUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestUploadUrl>>, {data: BodyType<UploadRequestBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestUploadUrl>>>
+    export type RequestUploadUrlMutationBody = BodyType<UploadRequestBody>
+    export type RequestUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a presigned URL to upload a file
+ */
+export const useRequestUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadRequestBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestUploadUrl>>,
+        TError,
+        {data: BodyType<UploadRequestBody>},
+        TContext
+      > => {
+      return useMutation(getRequestUploadUrlMutationOptions(options));
+    }
 

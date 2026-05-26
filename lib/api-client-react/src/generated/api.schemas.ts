@@ -14,6 +14,8 @@ export interface Book {
   title: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  coverImageUrl?: string | null;
   createdAt: string;
 }
 
@@ -21,31 +23,60 @@ export interface BookInput {
   /** @minLength 1 */
   title: string;
   description?: string;
+  coverImageUrl?: string;
 }
 
 export interface BookUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
+  coverImageUrl?: string;
 }
 
 export interface Chapter {
   id: number;
   bookId: number;
   title: string;
+  /**
+     * Student level: elementary4, elementary5, elementary6, middle
+     * @nullable
+     */
+  level?: string | null;
   orderIndex: number;
   createdAt: string;
 }
 
+export type ChapterInputLevel = typeof ChapterInputLevel[keyof typeof ChapterInputLevel];
+
+
+export const ChapterInputLevel = {
+  elementary4: 'elementary4',
+  elementary5: 'elementary5',
+  elementary6: 'elementary6',
+  middle: 'middle',
+} as const;
+
 export interface ChapterInput {
   /** @minLength 1 */
   title: string;
+  level?: ChapterInputLevel;
   orderIndex?: number;
 }
+
+export type ChapterUpdateLevel = typeof ChapterUpdateLevel[keyof typeof ChapterUpdateLevel];
+
+
+export const ChapterUpdateLevel = {
+  elementary4: 'elementary4',
+  elementary5: 'elementary5',
+  elementary6: 'elementary6',
+  middle: 'middle',
+} as const;
 
 export interface ChapterUpdate {
   /** @minLength 1 */
   title?: string;
+  level?: ChapterUpdateLevel;
   orderIndex?: number;
 }
 
@@ -202,5 +233,53 @@ export interface LeaderboardEntry {
   averageScore: number;
   submissionCount: number;
   bestScore?: number;
+}
+
+/**
+ * Student level for question difficulty
+ */
+export type GeneratePdfInputLevel = typeof GeneratePdfInputLevel[keyof typeof GeneratePdfInputLevel];
+
+
+export const GeneratePdfInputLevel = {
+  elementary4: 'elementary4',
+  elementary5: 'elementary5',
+  elementary6: 'elementary6',
+  middle: 'middle',
+} as const;
+
+export interface GeneratePdfInput {
+  /** Student level for question difficulty */
+  level: GeneratePdfInputLevel;
+  bookTitle?: string;
+  chapterTitle?: string;
+}
+
+export interface AiQuestion {
+  number: number;
+  question: string;
+  options: string[];
+  /** A, B, C, or D */
+  answer: string;
+}
+
+export interface PdfGenerationResult {
+  /** Base64-encoded quiz PDF */
+  quizPdfBase64: string;
+  /** Base64-encoded answer key PDF */
+  answerPdfBase64: string;
+  questions: AiQuestion[];
+}
+
+export interface UploadRequestBody {
+  filename: string;
+  contentType: string;
+  folder?: string;
+}
+
+export interface UploadResponseData {
+  uploadUrl: string;
+  objectPath: string;
+  publicUrl?: string;
 }
 

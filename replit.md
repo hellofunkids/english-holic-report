@@ -51,6 +51,14 @@
 - Large, touchable buttons (mobile/tablet friendly)
 - No emojis in the UI
 
+## Completed Features (v2)
+
+- Full Korean UI on all pages (home, student flow, teacher dashboard, books, results, content editor)
+- Book cover image upload via object storage (presigned URL → PUT → stored path)
+- Level selector per chapter: elementary4 / elementary5 / elementary6 / middle
+- AI PDF generation: POST /api/chapters/:chapterId/generate-pdf → Claude generates 20 MC questions → pdfkit builds quiz PDF + answer key PDF → base64 returned → browser downloads both files
+- Teacher content editor has "AI 시험지 생성" button with level selector and download links
+
 ## Gotchas
 
 - When creating quiz questions with `questionType: "short_answer"`, omit the `options` field (don't send `null`) — the Zod schema expects array or undefined.

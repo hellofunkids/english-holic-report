@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './aiQuestion';
 export * from './answerDetail';
 export * from './answerInput';
 export * from './answerInputQuestionType';
@@ -14,9 +15,14 @@ export * from './bookInput';
 export * from './bookUpdate';
 export * from './chapter';
 export * from './chapterInput';
+export * from './chapterInputLevel';
 export * from './chapterUpdate';
+export * from './chapterUpdateLevel';
+export * from './generatePdfInput';
+export * from './generatePdfInputLevel';
 export * from './healthStatus';
 export * from './leaderboardEntry';
+export * from './pdfGenerationResult';
 export * from './quizInput';
 export * from './quizInputQuestionType';
 export * from './quizQuestion';
@@ -26,6 +32,8 @@ export * from './quizUpdateQuestionType';
 export * from './statsSummary';
 export * from './submission';
 export * from './submissionInput';
+export * from './uploadRequestBody';
+export * from './uploadResponseData';
 export * from './vocabInput';
 export * from './vocabItem';
 export * from './vocabUpdate';

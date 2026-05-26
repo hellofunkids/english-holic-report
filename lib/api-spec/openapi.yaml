@@ -9,26 +9,20 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: books
-    description: Book management
   - name: chapters
-    description: Chapter management
   - name: vocabulary
-    description: Vocabulary management
   - name: quizzes
-    description: Quiz management
   - name: submissions
-    description: Student submissions
   - name: stats
-    description: Statistics and summaries
+  - name: pdf
+  - name: storage
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -436,7 +430,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Submission"
 
-  # ── Stats (wow endpoints) ──────────────────────────────────────────────────
+  # ── Stats ──────────────────────────────────────────────────────────────────
   /stats/summary:
     get:
       operationId: getStatsSummary
@@ -465,6 +459,52 @@ paths:
                 items:
                   $ref: "#/components/schemas/LeaderboardEntry"
 
+  # ── PDF Generation ─────────────────────────────────────────────────────────
+  /chapters/{chapterId}/generate-pdf:
+    post:
+      operationId: generatePdf
+      tags: [pdf]
+      summary: AI-generate 20 MC comprehension questions and produce quiz + answer PDFs
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratePdfInput"
+      responses:
+        "200":
+          description: Generated PDF data (base64)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PdfGenerationResult"
+
+  # ── Object Storage ─────────────────────────────────────────────────────────
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL to upload a file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequestBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponseData"
+
 components:
   schemas:
     HealthStatus:
@@ -472,8 +512,7 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
     # ── Book ───────────────────────────────────────────────────────────────
     Book:
@@ -485,6 +524,8 @@ components:
         title:
           type: string
         description:
+          type: ["string", "null"]
+        coverImageUrl:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -498,6 +539,8 @@ components:
           minLength: 1
         description:
           type: string
+        coverImageUrl:
+          type: string
 
     BookUpdate:
       type: object
@@ -506,6 +549,8 @@ components:
           type: string
           minLength: 1
         description:
+          type: string
+        coverImageUrl:
           type: string
 
     # ── Chapter ───────────────────────────────────────────────────────────
@@ -519,6 +564,9 @@ components:
           type: integer
         title:
           type: string
+        level:
+          type: ["string", "null"]
+          description: "Student level: elementary4, elementary5, elementary6, middle"
         orderIndex:
           type: integer
         createdAt:
@@ -531,6 +579,9 @@ components:
         title:
           type: string
           minLength: 1
+        level:
+          type: string
+          enum: [elementary4, elementary5, elementary6, middle]
         orderIndex:
           type: integer
 
@@ -540,6 +591,9 @@ components:
         title:
           type: string
           minLength: 1
+        level:
+          type: string
+          enum: [elementary4, elementary5, elementary6, middle]
         orderIndex:
           type: integer
 
@@ -767,3 +821,71 @@ components:
           type: integer
         bestScore:
           type: integer
+
+    # ── PDF Generation ─────────────────────────────────────────────────────
+    GeneratePdfInput:
+      type: object
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [elementary4, elementary5, elementary6, middle]
+          description: "Student level for question difficulty"
+        bookTitle:
+          type: string
+        chapterTitle:
+          type: string
+
+    PdfGenerationResult:
+      type: object
+      required: [quizPdfBase64, answerPdfBase64, questions]
+      properties:
+        quizPdfBase64:
+          type: string
+          description: Base64-encoded quiz PDF
+        answerPdfBase64:
+          type: string
+          description: Base64-encoded answer key PDF
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiQuestion"
+
+    AiQuestion:
+      type: object
+      required: [number, question, options, answer]
+      properties:
+        number:
+          type: integer
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        answer:
+          type: string
+          description: "A, B, C, or D"
+
+    # ── Object Storage ─────────────────────────────────────────────────────
+    UploadRequestBody:
+      type: object
+      required: [filename, contentType]
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+        folder:
+          type: string
+
+    UploadResponseData:
+      type: object
+      required: [uploadUrl, objectPath]
+      properties:
+        uploadUrl:
+          type: string
+        objectPath:
+          type: string
+        publicUrl:
+          type: string

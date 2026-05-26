@@ -10,6 +10,8 @@ import {
   useListVocabulary, 
   useListQuizzes, 
   useCreateSubmission,
+  getListVocabularyQueryKey,
+  getListQuizzesQueryKey,
   VocabItem,
   QuizQuestion,
   AnswerInput
@@ -47,11 +49,11 @@ export default function StudentQuiz() {
   const [currentAnswer, setCurrentAnswer] = useState("");
 
   const { data: vocabList, isLoading: isLoadingVocab } = useListVocabulary(chapterId ?? 0, {
-    query: { enabled: !!chapterId }
+    query: { enabled: !!chapterId, queryKey: getListVocabularyQueryKey(chapterId ?? 0) }
   });
   
   const { data: quizzes, isLoading: isLoadingQuizzes } = useListQuizzes(chapterId ?? 0, {
-    query: { enabled: !!chapterId }
+    query: { enabled: !!chapterId, queryKey: getListQuizzesQueryKey(chapterId ?? 0) }
   });
 
   const createSubmission = useCreateSubmission();
@@ -132,8 +134,8 @@ export default function StudentQuiz() {
     const currentQ = allQuestions[currentStep];
     
     const newAnswer: AnswerInput = {
-      questionId: currentQ.isVocab ? currentQ.vocabId : currentQ.id,
-      questionType: currentQ.isVocab ? currentQ.type : (currentQ as QuizQuestion).questionType === 'multiple_choice' ? 'comprehension_multiple_choice' : 'comprehension_short_answer',
+      questionId: currentQ.isVocab ? (currentQ as GeneratedVocabQuestion).vocabId : currentQ.id,
+      questionType: currentQ.isVocab ? (currentQ as GeneratedVocabQuestion).type : (currentQ as QuizQuestion).questionType === 'multiple_choice' ? 'comprehension_multiple_choice' : 'comprehension_short_answer',
       answer: currentAnswer.trim()
     };
     

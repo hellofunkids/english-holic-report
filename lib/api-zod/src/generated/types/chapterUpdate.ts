@@ -5,9 +5,11 @@
  * Book Quiz Lab API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChapterUpdateLevel } from './chapterUpdateLevel';
 
 export interface ChapterUpdate {
   /** @minLength 1 */
   title?: string;
+  level?: ChapterUpdateLevel;
   orderIndex?: number;
 }

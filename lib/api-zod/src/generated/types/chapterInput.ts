@@ -5,9 +5,11 @@
  * Book Quiz Lab API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChapterInputLevel } from './chapterInputLevel';
 
 export interface ChapterInput {
   /** @minLength 1 */
   title: string;
+  level?: ChapterInputLevel;
   orderIndex?: number;
 }

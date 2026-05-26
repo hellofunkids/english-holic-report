@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -24,6 +23,7 @@ export const ListBooksResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "coverImageUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListBooksResponse = zod.array(ListBooksResponseItem)
@@ -37,7 +37,8 @@ export const ListBooksResponse = zod.array(ListBooksResponseItem)
 
 export const CreateBookBody = zod.object({
   "title": zod.string().min(1),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "coverImageUrl": zod.string().optional()
 })
 
 
@@ -52,6 +53,7 @@ export const GetBookResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "coverImageUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -68,13 +70,15 @@ export const UpdateBookParams = zod.object({
 
 export const UpdateBookBody = zod.object({
   "title": zod.string().min(1).optional(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "coverImageUrl": zod.string().optional()
 })
 
 export const UpdateBookResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "coverImageUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -98,6 +102,7 @@ export const ListChaptersResponseItem = zod.object({
   "id": zod.number(),
   "bookId": zod.number(),
   "title": zod.string(),
+  "level": zod.string().nullish().describe('Student level: elementary4, elementary5, elementary6, middle'),
   "orderIndex": zod.number(),
   "createdAt": zod.string()
 })
@@ -116,6 +121,7 @@ export const CreateChapterParams = zod.object({
 
 export const CreateChapterBody = zod.object({
   "title": zod.string().min(1),
+  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']).optional(),
   "orderIndex": zod.number().optional()
 })
 
@@ -133,6 +139,7 @@ export const UpdateChapterParams = zod.object({
 
 export const UpdateChapterBody = zod.object({
   "title": zod.string().min(1).optional(),
+  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']).optional(),
   "orderIndex": zod.number().optional()
 })
 
@@ -140,6 +147,7 @@ export const UpdateChapterResponse = zod.object({
   "id": zod.number(),
   "bookId": zod.number(),
   "title": zod.string(),
+  "level": zod.string().nullish().describe('Student level: elementary4, elementary5, elementary6, middle'),
   "orderIndex": zod.number(),
   "createdAt": zod.string()
 })
@@ -433,5 +441,46 @@ export const GetLeaderboardResponseItem = zod.object({
   "bestScore": zod.number().optional()
 })
 export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
+
+
+/**
+ * @summary AI-generate 20 MC comprehension questions and produce quiz + answer PDFs
+ */
+export const GeneratePdfParams = zod.object({
+  "chapterId": zod.coerce.number()
+})
+
+export const GeneratePdfBody = zod.object({
+  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']).describe('Student level for question difficulty'),
+  "bookTitle": zod.string().optional(),
+  "chapterTitle": zod.string().optional()
+})
+
+export const GeneratePdfResponse = zod.object({
+  "quizPdfBase64": zod.string().describe('Base64-encoded quiz PDF'),
+  "answerPdfBase64": zod.string().describe('Base64-encoded answer key PDF'),
+  "questions": zod.array(zod.object({
+  "number": zod.number(),
+  "question": zod.string(),
+  "options": zod.array(zod.string()),
+  "answer": zod.string().describe('A, B, C, or D')
+}))
+})
+
+
+/**
+ * @summary Request a presigned URL to upload a file
+ */
+export const RequestUploadUrlBody = zod.object({
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "folder": zod.string().optional()
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadUrl": zod.string(),
+  "objectPath": zod.string(),
+  "publicUrl": zod.string().optional()
+})
 
 

@@ -80,7 +80,7 @@ router.get("/stats/leaderboard", async (req, res) => {
     })
     .from(submissionsTable)
     .groupBy(submissionsTable.studentName)
-    .orderBy(sql`avg_score DESC NULLS LAST`)
+    .orderBy(sql`ROUND((SUM(${submissionsTable.totalScore})::numeric / NULLIF(SUM(${submissionsTable.totalPossible}), 0)) * 100, 1) DESC NULLS LAST`)
     .limit(10);
 
   res.json(

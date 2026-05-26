@@ -7,6 +7,7 @@ export const booksTable = pgTable("books", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
+  coverImageUrl: text("cover_image_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -19,6 +20,7 @@ export const chaptersTable = pgTable("chapters", {
   id: serial("id").primaryKey(),
   bookId: integer("book_id").notNull().references(() => booksTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  level: text("level").default("elementary4"), // elementary4 | elementary5 | elementary6 | middle
   orderIndex: integer("order_index").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -47,7 +49,7 @@ export const quizzesTable = pgTable("quizzes", {
   chapterId: integer("chapter_id").notNull().references(() => chaptersTable.id, { onDelete: "cascade" }),
   questionType: text("question_type").notNull(), // multiple_choice | short_answer
   question: text("question").notNull(),
-  options: jsonb("options").$type<string[]>(), // for multiple_choice
+  options: jsonb("options").$type<string[]>(),
   answer: text("answer").notNull(),
   explanation: text("explanation"),
   orderIndex: integer("order_index").default(0).notNull(),
@@ -59,7 +61,6 @@ export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type Quiz = typeof quizzesTable.$inferSelect;
 
 // ── Submissions ────────────────────────────────────────────────────────────
-// answers is a JSON array of AnswerDetail objects
 export const submissionsTable = pgTable("submissions", {
   id: serial("id").primaryKey(),
   studentName: text("student_name").notNull(),

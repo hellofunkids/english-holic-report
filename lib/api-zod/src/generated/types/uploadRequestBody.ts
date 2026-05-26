@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface BookInput {
-  /** @minLength 1 */
-  title: string;
-  description?: string;
-  coverImageUrl?: string;
+export interface UploadRequestBody {
+  filename: string;
+  contentType: string;
+  folder?: string;
 }

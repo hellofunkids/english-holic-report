@@ -4,7 +4,7 @@ import { StudentLayout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuizContext } from "@/lib/quiz-store";
-import { useListBooks, useListChapters } from "@workspace/api-client-react";
+import { useListBooks, useListChapters, getListChaptersQueryKey } from "@workspace/api-client-react";
 import { Book, ChevronRight, Loader2 } from "lucide-react";
 
 export default function StudentSelect() {
@@ -14,7 +14,7 @@ export default function StudentSelect() {
 
   const { data: books, isLoading: isLoadingBooks } = useListBooks();
   const { data: chapters, isLoading: isLoadingChapters } = useListChapters(selectedBookId ?? 0, {
-    query: { enabled: !!selectedBookId }
+    query: { enabled: !!selectedBookId, queryKey: getListChaptersQueryKey(selectedBookId ?? 0) }
   });
 
   const handleStartQuiz = (chapterId: number) => {
