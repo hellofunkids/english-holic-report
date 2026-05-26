@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Book Quiz Lab API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: books
+    description: Book management
+  - name: chapters
+    description: Chapter management
+  - name: vocabulary
+    description: Vocabulary management
+  - name: quizzes
+    description: Quiz management
+  - name: submissions
+    description: Student submissions
+  - name: stats
+    description: Statistics and summaries
 paths:
   /healthz:
     get:
@@ -24,6 +36,435 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Books ──────────────────────────────────────────────────────────────────
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List all books
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+    post:
+      operationId: createBook
+      tags: [books]
+      summary: Create a new book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        "201":
+          description: Created book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+
+  /books/{bookId}:
+    get:
+      operationId: getBook
+      tags: [books]
+      summary: Get a book by ID
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+    patch:
+      operationId: updateBook
+      tags: [books]
+      summary: Update a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookUpdate"
+      responses:
+        "200":
+          description: Updated book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      summary: Delete a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Chapters ───────────────────────────────────────────────────────────────
+  /books/{bookId}/chapters:
+    get:
+      operationId: listChapters
+      tags: [chapters]
+      summary: List chapters for a book
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of chapters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chapter"
+    post:
+      operationId: createChapter
+      tags: [chapters]
+      summary: Create a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterInput"
+      responses:
+        "201":
+          description: Created chapter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+
+  /books/{bookId}/chapters/{chapterId}:
+    patch:
+      operationId: updateChapter
+      tags: [chapters]
+      summary: Update a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterUpdate"
+      responses:
+        "200":
+          description: Updated chapter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+    delete:
+      operationId: deleteChapter
+      tags: [chapters]
+      summary: Delete a chapter
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Vocabulary ─────────────────────────────────────────────────────────────
+  /chapters/{chapterId}/vocabulary:
+    get:
+      operationId: listVocabulary
+      tags: [vocabulary]
+      summary: List vocabulary for a chapter
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of vocabulary items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VocabItem"
+    post:
+      operationId: createVocabItem
+      tags: [vocabulary]
+      summary: Create a vocabulary item
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VocabInput"
+      responses:
+        "201":
+          description: Created vocab item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VocabItem"
+
+  /vocabulary/{vocabId}:
+    patch:
+      operationId: updateVocabItem
+      tags: [vocabulary]
+      summary: Update a vocabulary item
+      parameters:
+        - name: vocabId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VocabUpdate"
+      responses:
+        "200":
+          description: Updated vocab item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VocabItem"
+    delete:
+      operationId: deleteVocabItem
+      tags: [vocabulary]
+      summary: Delete a vocabulary item
+      parameters:
+        - name: vocabId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Quizzes ────────────────────────────────────────────────────────────────
+  /chapters/{chapterId}/quizzes:
+    get:
+      operationId: listQuizzes
+      tags: [quizzes]
+      summary: List quizzes for a chapter
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of quiz questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizQuestion"
+    post:
+      operationId: createQuizQuestion
+      tags: [quizzes]
+      summary: Create a quiz question
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "201":
+          description: Created quiz question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizQuestion"
+
+  /quizzes/{quizId}:
+    patch:
+      operationId: updateQuizQuestion
+      tags: [quizzes]
+      summary: Update a quiz question
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizUpdate"
+      responses:
+        "200":
+          description: Updated quiz question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizQuestion"
+    delete:
+      operationId: deleteQuizQuestion
+      tags: [quizzes]
+      summary: Delete a quiz question
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Submissions ────────────────────────────────────────────────────────────
+  /submissions:
+    get:
+      operationId: listSubmissions
+      tags: [submissions]
+      summary: List all submissions (teacher view)
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      operationId: createSubmission
+      tags: [submissions]
+      summary: Submit a student's quiz attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionInput"
+      responses:
+        "201":
+          description: Created submission with score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  /submissions/{submissionId}:
+    get:
+      operationId: getSubmission
+      tags: [submissions]
+      summary: Get a single submission with answers detail
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submission details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  # ── Stats (wow endpoints) ──────────────────────────────────────────────────
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Overall stats summary for teacher dashboard
+      responses:
+        "200":
+          description: Summary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [stats]
+      summary: Top scoring students
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +475,295 @@ components:
       required:
         - status
 
+    # ── Book ───────────────────────────────────────────────────────────────
+    Book:
+      type: object
+      required: [id, title, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    BookInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    # ── Chapter ───────────────────────────────────────────────────────────
+    Chapter:
+      type: object
+      required: [id, bookId, title, orderIndex, createdAt]
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        title:
+          type: string
+        orderIndex:
+          type: integer
+        createdAt:
+          type: string
+
+    ChapterInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        orderIndex:
+          type: integer
+
+    ChapterUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        orderIndex:
+          type: integer
+
+    # ── Vocabulary ─────────────────────────────────────────────────────────
+    VocabItem:
+      type: object
+      required: [id, chapterId, word, meaning, createdAt]
+      properties:
+        id:
+          type: integer
+        chapterId:
+          type: integer
+        word:
+          type: string
+        meaning:
+          type: string
+        exampleSentence:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    VocabInput:
+      type: object
+      required: [word, meaning]
+      properties:
+        word:
+          type: string
+          minLength: 1
+        meaning:
+          type: string
+          minLength: 1
+        exampleSentence:
+          type: string
+
+    VocabUpdate:
+      type: object
+      properties:
+        word:
+          type: string
+          minLength: 1
+        meaning:
+          type: string
+          minLength: 1
+        exampleSentence:
+          type: string
+
+    # ── Quiz ──────────────────────────────────────────────────────────────
+    QuizQuestion:
+      type: object
+      required: [id, chapterId, questionType, question, answer, createdAt]
+      properties:
+        id:
+          type: integer
+        chapterId:
+          type: integer
+        questionType:
+          type: string
+          enum: [multiple_choice, short_answer]
+        question:
+          type: string
+        options:
+          type: ["array", "null"]
+          items:
+            type: string
+        answer:
+          type: string
+        explanation:
+          type: ["string", "null"]
+        orderIndex:
+          type: integer
+        createdAt:
+          type: string
+
+    QuizInput:
+      type: object
+      required: [questionType, question, answer]
+      properties:
+        questionType:
+          type: string
+          enum: [multiple_choice, short_answer]
+        question:
+          type: string
+          minLength: 1
+        options:
+          type: array
+          items:
+            type: string
+        answer:
+          type: string
+          minLength: 1
+        explanation:
+          type: string
+        orderIndex:
+          type: integer
+
+    QuizUpdate:
+      type: object
+      properties:
+        questionType:
+          type: string
+          enum: [multiple_choice, short_answer]
+        question:
+          type: string
+          minLength: 1
+        options:
+          type: array
+          items:
+            type: string
+        answer:
+          type: string
+          minLength: 1
+        explanation:
+          type: string
+        orderIndex:
+          type: integer
+
+    # ── Submission ─────────────────────────────────────────────────────────
+    Submission:
+      type: object
+      required: [id, studentName, bookId, bookTitle, chapterId, chapterTitle, vocabScore, quizScore, totalScore, submittedAt]
+      properties:
+        id:
+          type: integer
+        studentName:
+          type: string
+        bookId:
+          type: integer
+        bookTitle:
+          type: string
+        chapterId:
+          type: integer
+        chapterTitle:
+          type: string
+        vocabScore:
+          type: integer
+        vocabTotal:
+          type: integer
+        quizScore:
+          type: integer
+        quizTotal:
+          type: integer
+        totalScore:
+          type: integer
+        totalPossible:
+          type: integer
+        answers:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/AnswerDetail"
+        submittedAt:
+          type: string
+
+    SubmissionInput:
+      type: object
+      required: [studentName, chapterId, answers]
+      properties:
+        studentName:
+          type: string
+          minLength: 1
+        chapterId:
+          type: integer
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerInput"
+
+    AnswerInput:
+      type: object
+      required: [questionId, questionType, answer]
+      properties:
+        questionId:
+          type: integer
+        questionType:
+          type: string
+          enum: [vocab_en_to_ko, vocab_ko_to_en, vocab_multiple_choice, vocab_fill_blank, comprehension_multiple_choice, comprehension_short_answer]
+        answer:
+          type: string
+
+    AnswerDetail:
+      type: object
+      required: [questionId, questionType, studentAnswer, correctAnswer, isCorrect]
+      properties:
+        questionId:
+          type: integer
+        questionType:
+          type: string
+        question:
+          type: string
+        studentAnswer:
+          type: string
+        correctAnswer:
+          type: string
+        isCorrect:
+          type: boolean
+        explanation:
+          type: ["string", "null"]
+
+    # ── Stats ─────────────────────────────────────────────────────────────
+    StatsSummary:
+      type: object
+      required: [totalSubmissions, totalStudents, totalBooks, averageScore]
+      properties:
+        totalSubmissions:
+          type: integer
+        totalStudents:
+          type: integer
+        totalBooks:
+          type: integer
+        averageScore:
+          type: number
+        recentSubmissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Submission"
+
+    LeaderboardEntry:
+      type: object
+      required: [studentName, averageScore, submissionCount]
+      properties:
+        studentName:
+          type: string
+        averageScore:
+          type: number
+        submissionCount:
+          type: integer
+        bestScore:
+          type: integer
