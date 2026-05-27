@@ -458,7 +458,7 @@ function drawDiagnosisCards(
 ): number {
   const x = 40;
   const w = doc.page.width - 80;
-  const cardH = 100;
+  const cardH = 145;
 
   drawListCard(
     doc,
@@ -518,21 +518,21 @@ function drawListCard(
     .text(subtitle, x + 14, y + 24, { lineBreak: false });
 
   const startY = y + 40;
-  const itemW = w - 32;
+  const itemW = w - 40;
   let cy = startY;
   const maxY = y + h - 6;
   for (const item of items) {
     if (!item.trim()) continue;
     doc.fillColor(GREY).font(F_REG).fontSize(9);
-    const th = doc.heightOfString(item, { width: itemW - 12, lineGap: 1 });
+    const th = doc.heightOfString(item, { width: itemW - 12, lineGap: 2 });
     if (cy + th > maxY) break;
-    doc.circle(x + 18, cy + 5, 1.6).fill(accent);
+    doc.circle(x + 18, cy + 5, 1.8).fill(accent);
     doc
       .fillColor(GREY)
       .font(F_REG)
       .fontSize(9)
-      .text(item, x + 26, cy, { width: itemW - 12, lineGap: 1 });
-    cy += th + 3;
+      .text(item, x + 26, cy, { width: itemW - 12, lineGap: 2 });
+    cy += th + 5;
   }
 }
 
@@ -641,23 +641,36 @@ function drawNextStepsList(
 ): number {
   const x = 40;
   const w = doc.page.width - 80;
-  const rowH = 22;
-  const h = Math.max(items.length, 1) * rowH + 8;
-  doc.roundedRect(x, y, w, h, 6).fillAndStroke("#fafbfd", "#e0e3ec");
+  const textW = w - 46;
+  const padTop = 8;
+  const itemGap = 6;
 
-  let cy = y + 6;
+  // Measure each item to compute total height
+  doc.font(F_REG).fontSize(9.5);
+  const heights = items.map((item) =>
+    item.trim()
+      ? Math.max(20, doc.heightOfString(item, { width: textW, lineGap: 2 }) + 4)
+      : 0,
+  );
+  const totalH =
+    padTop * 2 +
+    heights.reduce((s, h) => s + h, 0) +
+    Math.max(0, heights.filter((h) => h > 0).length - 1) * itemGap;
+
+  doc.roundedRect(x, y, w, totalH, 6).fillAndStroke("#fafbfd", "#e0e3ec");
+
+  let cy = y + padTop;
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (!item.trim()) continue;
-    // Numbered circle
-    const numX = x + 14;
-    const numY = cy + 4;
-    doc.circle(numX + 6, numY + 6, 8).fill(NAVY);
+    const ih = heights[i];
+    // Numbered circle, aligned to first line
+    doc.circle(x + 20, cy + 8, 8).fill(NAVY);
     doc
       .fillColor("white")
       .font(F_BOLD)
       .fontSize(9)
-      .text(`${i + 1}`, numX, numY + 2, {
+      .text(`${i + 1}`, x + 14, cy + 5, {
         width: 12,
         align: "center",
         lineBreak: false,
@@ -666,15 +679,13 @@ function drawNextStepsList(
       .fillColor(GREY)
       .font(F_REG)
       .fontSize(9.5)
-      .text(item, x + 36, cy + 5, {
-        width: w - 50,
-        height: rowH - 4,
-        lineGap: 1,
-        ellipsis: true,
+      .text(item, x + 36, cy + 2, {
+        width: textW,
+        lineGap: 2,
       });
-    cy += rowH;
+    cy += ih + itemGap;
   }
-  return y + h;
+  return y + totalH;
 }
 
 // ───────────────────────── Parent Message ─────────────────────────
