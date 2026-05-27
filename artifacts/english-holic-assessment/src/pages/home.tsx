@@ -25,6 +25,7 @@ const DEFAULT_AUTHOR = AUTHORS[0];
 const ACADEMY = "헬로펀키즈 주니어 어학원";
 const TEST_TITLE = "영어홀릭";
 const MAX_FILES = 8;
+const BOOK_PLACEHOLDER = "예: Bridge Writing 1";
 
 type Stage = "idle" | "uploading" | "done";
 
@@ -64,6 +65,7 @@ function isHeicFile(file: File): boolean {
 
 export default function Home() {
   const [studentName, setStudentName] = useState("");
+  const [bookName, setBookName] = useState("");
   const [teacher, setTeacher] = useState<string>(DEFAULT_AUTHOR);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [stage, setStage] = useState<Stage>("idle");
@@ -110,6 +112,7 @@ export default function Home() {
     files.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
     setFiles([]);
     setStudentName("");
+    setBookName("");
     setResult(null);
     setStage("idle");
   };
@@ -117,6 +120,10 @@ export default function Home() {
   const handleSubmit = async () => {
     if (!studentName.trim()) {
       toast({ title: "학생 이름을 입력해 주세요.", variant: "destructive" });
+      return;
+    }
+    if (!bookName.trim()) {
+      toast({ title: "교재명을 입력해 주세요.", variant: "destructive" });
       return;
     }
     if (files.length === 0) {
@@ -132,6 +139,7 @@ export default function Home() {
     fd.append("studentName", studentName.trim());
     fd.append("teacherName", teacher);
     fd.append("testTitle", TEST_TITLE);
+    fd.append("bookName", bookName.trim());
     files.forEach((f) => fd.append("images", f.file, f.file.name));
 
     try {
@@ -203,7 +211,7 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="student">학생 이름</Label>
               <Input
@@ -211,6 +219,16 @@ export default function Home() {
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="예: 김민준"
+                disabled={stage === "uploading"}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="book">교재명</Label>
+              <Input
+                id="book"
+                value={bookName}
+                onChange={(e) => setBookName(e.target.value)}
+                placeholder={BOOK_PLACEHOLDER}
                 disabled={stage === "uploading"}
               />
             </div>

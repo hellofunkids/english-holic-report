@@ -49,11 +49,6 @@ export interface AssessmentReport {
     reading: number;
     writing: number;
   };
-  questionAnalysis: Array<{
-    number: string;
-    correct: boolean;
-    comment: string;
-  }>;
   totalScore?: number;
 }
 
@@ -87,47 +82,35 @@ export function buildAssessmentReportPdf(
     doc.on("error", reject);
 
     drawHeader(doc, meta);
-    let y = 168;
+    let y = 158;
 
-    // Student info card
+    // Student info card (compact)
     y = drawInfoCard(doc, meta, y);
-    y += 14;
+    y += 10;
+
+    // Domain scores first (visual summary)
+    y = drawSection(doc, "영역별 평가", y);
+    y = drawDomainScores(doc, report.domainScores, y, report.totalScore);
+    y += 8;
 
     // Overall comment
     y = drawSection(doc, "총평", y);
     y = drawParagraph(doc, report.overallComment, y);
-    y += 10;
-
-    // Domain scores
-    y = ensureSpace(doc, y, 120);
-    y = drawSection(doc, "영역별 평가", y);
-    y = drawDomainScores(doc, report.domainScores, y);
-    y += 10;
+    y += 8;
 
     // Strengths
-    y = ensureSpace(doc, y, 80);
     y = drawSection(doc, "잘한 점", y, GREEN);
     y = drawBullets(doc, report.strengths, y, GREEN);
-    y += 8;
+    y += 6;
 
     // Improvements
-    y = ensureSpace(doc, y, 80);
     y = drawSection(doc, "보완할 점", y, RED);
     y = drawBullets(doc, report.improvements, y, RED);
-    y += 8;
+    y += 6;
 
     // Next steps
-    y = ensureSpace(doc, y, 80);
     y = drawSection(doc, "다음 학습 제안", y);
     y = drawBullets(doc, report.nextSteps, y, NAVY);
-    y += 12;
-
-    // Question analysis
-    if (report.questionAnalysis.length > 0) {
-      y = ensureSpace(doc, y, 60);
-      y = drawSection(doc, "문항별 분석", y);
-      y = drawQuestionAnalysis(doc, report.questionAnalysis, y);
-    }
 
     // Footer signature
     drawSignature(doc, meta);
@@ -138,34 +121,39 @@ export function buildAssessmentReportPdf(
 }
 
 function drawHeader(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {
-  doc.rect(0, 0, doc.page.width, 100).fill(NAVY);
-  doc.fillColor("white").fontSize(18).font(F_BOLD).text(ACADEMY_NAME, 50, 18);
+  doc.rect(0, 0, doc.page.width, 110).fill(NAVY);
+  doc.fillColor("white").fontSize(17).font(F_BOLD).text(ACADEMY_NAME, 50, 16);
   doc
     .fillColor("#c9d4f0")
-    .fontSize(12)
+    .fontSize(11)
     .font(F_REG)
-    .text("학업 성취도 평가서 (Achievement Test Report)", 50, 46);
+    .text("학업 성취도 평가서 (Achievement Test Report)", 50, 40);
 
+  // 교재명 prominent
   doc
     .fillColor(GOLD)
+    .fontSize(13)
+    .font(F_BOLD)
+    .text(`교재: ${meta.testTitle}`, 50, 62, {
+      width: doc.page.width - 100,
+    });
+
+  doc
+    .fillColor("white")
     .fontSize(10)
     .font(F_BOLD)
-    .text(`담당: ${meta.teacherName}`, doc.page.width - 200, 22, {
-      width: 150,
+    .text(`담당: ${meta.teacherName}`, doc.page.width - 220, 20, {
+      width: 170,
       align: "right",
     });
   doc
     .fillColor("#c9d4f0")
     .fontSize(9)
     .font(F_REG)
-    .text(meta.date, doc.page.width - 200, 40, {
-      width: 150,
+    .text(meta.date, doc.page.width - 220, 38, {
+      width: 170,
       align: "right",
     });
-  doc.text(`교재: ${meta.testTitle}`, doc.page.width - 200, 54, {
-    width: 150,
-    align: "right",
-  });
 }
 
 function drawInfoCard(
@@ -175,31 +163,32 @@ function drawInfoCard(
 ): number {
   const x = 50;
   const w = doc.page.width - 100;
-  doc.roundedRect(x, y, w, 60, 8).fillAndStroke("#f7f3e8", GOLD);
+  const h = 46;
+  doc.roundedRect(x, y, w, h, 8).fillAndStroke("#f7f3e8", GOLD);
 
   doc
-    .fillColor(NAVY)
-    .font(F_BOLD)
-    .fontSize(11)
-    .text("학생 이름", x + 16, y + 12);
+    .fillColor("#6b5a1f")
+    .font(F_REG)
+    .fontSize(9)
+    .text("학생 이름", x + 16, y + 8);
   doc
     .font(F_BOLD)
-    .fontSize(20)
+    .fontSize(16)
     .fillColor(NAVY)
-    .text(meta.studentName, x + 16, y + 28);
+    .text(meta.studentName, x + 16, y + 20);
 
   doc
     .font(F_REG)
-    .fontSize(10)
+    .fontSize(9)
     .fillColor("#6b5a1f")
-    .text("평가일", x + w - 200, y + 14);
+    .text("평가일", x + w - 200, y + 8);
   doc
     .font(F_BOLD)
-    .fontSize(13)
+    .fontSize(12)
     .fillColor(NAVY)
-    .text(meta.date, x + w - 200, y + 30);
+    .text(meta.date, x + w - 200, y + 22);
 
-  return y + 60;
+  return y + h;
 }
 
 function drawSection(
@@ -208,13 +197,13 @@ function drawSection(
   y: number,
   color: string = NAVY,
 ): number {
-  doc.rect(50, y, 4, 16).fill(color);
+  doc.rect(50, y, 3, 14).fill(color);
   doc
     .fillColor(color)
     .font(F_BOLD)
-    .fontSize(13)
-    .text(title, 62, y);
-  return y + 22;
+    .fontSize(12)
+    .text(title, 60, y - 1);
+  return y + 18;
 }
 
 function drawParagraph(
@@ -222,15 +211,11 @@ function drawParagraph(
   text: string,
   y: number,
 ): number {
-  doc.fillColor("#222").font(F_REG).fontSize(10.5);
+  doc.fillColor("#222").font(F_REG).fontSize(10);
   const w = doc.page.width - 100;
-  const h = doc.heightOfString(text, { width: w, lineGap: 3 });
-  if (y + h > doc.page.height - 80) {
-    doc.addPage();
-    y = 60;
-  }
-  doc.text(text, 50, y, { width: w, lineGap: 3 });
-  return y + h + 4;
+  const h = doc.heightOfString(text, { width: w, lineGap: 2 });
+  doc.text(text, 50, y, { width: w, lineGap: 2 });
+  return y + h + 2;
 }
 
 function drawBullets(
@@ -239,22 +224,18 @@ function drawBullets(
   y: number,
   bulletColor: string,
 ): number {
-  const w = doc.page.width - 100 - 16;
+  const w = doc.page.width - 100 - 14;
   for (const item of items) {
     if (!item.trim()) continue;
-    doc.fillColor("#222").font(F_REG).fontSize(10.5);
-    const h = doc.heightOfString(item, { width: w, lineGap: 2 });
-    if (y + h > doc.page.height - 80) {
-      doc.addPage();
-      y = 60;
-    }
-    doc.circle(56, y + 6, 2.2).fill(bulletColor);
+    doc.fillColor("#222").font(F_REG).fontSize(9.8);
+    const h = doc.heightOfString(item, { width: w, lineGap: 1.5 });
+    doc.circle(55, y + 5, 1.8).fill(bulletColor);
     doc
       .fillColor("#222")
       .font(F_REG)
-      .fontSize(10.5)
-      .text(item, 66, y, { width: w, lineGap: 2 });
-    y += h + 4;
+      .fontSize(9.8)
+      .text(item, 64, y, { width: w, lineGap: 1.5 });
+    y += h + 3;
   }
   return y;
 }
@@ -263,101 +244,77 @@ function drawDomainScores(
   doc: PDFKit.PDFDocument,
   scores: AssessmentReport["domainScores"],
   y: number,
+  totalScore?: number,
 ): number {
   const entries = (Object.keys(DOMAIN_LABELS) as Array<keyof typeof DOMAIN_LABELS>).map(
     (k) => ({ label: DOMAIN_LABELS[k], value: clamp(scores[k]) }),
   );
   const startX = 50;
   const fullW = doc.page.width - 100;
-  const labelW = 50;
-  const valueW = 50;
-  const barW = fullW - labelW - valueW - 16;
-  const rowH = 22;
 
-  for (const e of entries) {
-    doc
-      .fillColor(NAVY)
-      .font(F_BOLD)
-      .fontSize(10.5)
-      .text(e.label, startX, y + 4, { width: labelW });
+  // 2-column layout: 2 domains per row
+  const colW = (fullW - 12) / 2;
+  const labelW = 40;
+  const valueW = 42;
+  const barW = colW - labelW - valueW - 8;
+  const rowH = 20;
 
-    // bar background
-    const barX = startX + labelW + 8;
-    doc.roundedRect(barX, y + 6, barW, 10, 5).fill("#e9ecf4");
-    // bar fill
-    const fillW = Math.max(2, (barW * e.value) / 100);
-    const color = e.value >= 80 ? GREEN : e.value >= 60 ? GOLD : RED;
-    doc.roundedRect(barX, y + 6, fillW, 10, 5).fill(color);
+  for (let i = 0; i < entries.length; i += 2) {
+    for (let c = 0; c < 2; c++) {
+      const e = entries[i + c];
+      if (!e) continue;
+      const x = startX + c * (colW + 12);
+      doc
+        .fillColor(NAVY)
+        .font(F_BOLD)
+        .fontSize(10)
+        .text(e.label, x, y + 4, { width: labelW });
 
-    doc
-      .fillColor(color)
-      .font(F_BOLD)
-      .fontSize(11)
-      .text(`${e.value}점`, barX + barW + 8, y + 4, {
-        width: valueW,
-        align: "right",
-      });
+      const barX = x + labelW;
+      doc.roundedRect(barX, y + 6, barW, 9, 4.5).fill("#e9ecf4");
+      const fillW = Math.max(2, (barW * e.value) / 100);
+      const color = e.value >= 80 ? GREEN : e.value >= 60 ? GOLD : RED;
+      doc.roundedRect(barX, y + 6, fillW, 9, 4.5).fill(color);
 
+      doc
+        .fillColor(color)
+        .font(F_BOLD)
+        .fontSize(10.5)
+        .text(`${e.value}점`, barX + barW + 4, y + 4, {
+          width: valueW,
+          align: "right",
+        });
+    }
     y += rowH;
   }
-  return y;
-}
 
-function drawQuestionAnalysis(
-  doc: PDFKit.PDFDocument,
-  items: AssessmentReport["questionAnalysis"],
-  y: number,
-): number {
-  const numW = 36;
-  const markW = 28;
-  const commentW = doc.page.width - 100 - numW - markW - 16;
-
-  for (const it of items) {
-    doc.fillColor("#222").font(F_REG).fontSize(10);
-    const h = Math.max(
-      18,
-      doc.heightOfString(it.comment, { width: commentW, lineGap: 2 }) + 4,
-    );
-    if (y + h > doc.page.height - 80) {
-      doc.addPage();
-      y = 60;
-    }
-    // num
-    doc.roundedRect(50, y, numW, h - 4, 4).fill("#f4f5f9");
-    doc
-      .fillColor(NAVY)
-      .font(F_BOLD)
-      .fontSize(10)
-      .text(it.number, 50, y + 4, { width: numW, align: "center" });
-    // mark
-    const markColor = it.correct ? GREEN : RED;
-    doc.roundedRect(50 + numW + 8, y, markW, h - 4, 4).fill(markColor);
+  if (typeof totalScore === "number" && Number.isFinite(totalScore)) {
+    y += 2;
+    const total = clamp(totalScore);
+    doc.roundedRect(startX, y, fullW, 24, 6).fill(NAVY);
     doc
       .fillColor("white")
       .font(F_BOLD)
       .fontSize(11)
-      .text(it.correct ? "O" : "X", 50 + numW + 8, y + 4, {
-        width: markW,
-        align: "center",
-      });
-    // comment
+      .text("총점", startX + 14, y + 7);
     doc
-      .fillColor("#222")
-      .font(F_REG)
-      .fontSize(10)
-      .text(it.comment, 50 + numW + 8 + markW + 8, y + 2, {
-        width: commentW,
-        lineGap: 2,
+      .fillColor(GOLD)
+      .font(F_BOLD)
+      .fontSize(14)
+      .text(`${total}점`, startX, y + 5, {
+        width: fullW - 14,
+        align: "right",
       });
-    y += h;
+    y += 24;
   }
+
   return y;
 }
 
 function drawSignature(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {
   const range = doc.bufferedPageRange();
   doc.switchToPage(range.start + range.count - 1);
-  const y = doc.page.height - 110;
+  const y = doc.page.height - 70;
   doc
     .strokeColor(GOLD)
     .lineWidth(1)
@@ -367,18 +324,18 @@ function drawSignature(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {
   doc
     .fillColor("#6b5a1f")
     .font(F_REG)
-    .fontSize(9)
+    .fontSize(8.5)
     .text(
       "본 평가서는 학생의 학업 성취도를 진단하고 학습 방향을 제안하기 위한 자료입니다. 추가 상담이 필요하시면 학원으로 연락 주시기 바랍니다.",
       50,
-      y + 8,
-      { width: doc.page.width - 100, lineGap: 2 },
+      y + 6,
+      { width: doc.page.width - 100, lineGap: 1 },
     );
   doc
     .fillColor(NAVY)
     .font(F_BOLD)
-    .fontSize(11)
-    .text(`${ACADEMY_NAME}  ·  담당 ${meta.teacherName}`, 50, y + 48, {
+    .fontSize(9.5)
+    .text(`${ACADEMY_NAME}  ·  담당 ${meta.teacherName}`, 50, y + 28, {
       width: doc.page.width - 100,
       align: "right",
     });
@@ -399,14 +356,6 @@ function drawPageFooters(doc: PDFKit.PDFDocument) {
         { width: doc.page.width - 100, align: "center" },
       );
   }
-}
-
-function ensureSpace(doc: PDFKit.PDFDocument, y: number, need: number): number {
-  if (y + need > doc.page.height - 80) {
-    doc.addPage();
-    return 60;
-  }
-  return y;
 }
 
 function clamp(n: number): number {
