@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/english-holic/"
+title = "영어홀릭 평가서"
+version = "1.0.0"
+id = "artifacts/english-holic-assessment"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/english-holic/" ]
+localPort = 18431
+
+[services.development]
+run = "pnpm --filter @workspace/english-holic-assessment run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/english-holic-assessment", "run", "build" ]
+publicDir = "artifacts/english-holic-assessment/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18431"
+BASE_PATH = "/english-holic/"

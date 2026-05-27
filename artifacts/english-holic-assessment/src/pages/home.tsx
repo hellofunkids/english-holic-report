@@ -1,6 +1,12 @@
 import { useState, useRef } from "react";
-import { Link } from "wouter";
-import { BookOpen, Upload, X, FileText, Loader2, ArrowLeft } from "lucide-react";
+import {
+  BookOpen,
+  Upload,
+  X,
+  FileText,
+  Loader2,
+  ClipboardCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +62,7 @@ function isHeicFile(file: File): boolean {
   );
 }
 
-export default function AssessmentPage() {
+export default function Home() {
   const [studentName, setStudentName] = useState("");
   const [teacher, setTeacher] = useState<string>(DEFAULT_AUTHOR);
   const [files, setFiles] = useState<PickedFile[]>([]);
@@ -129,8 +135,7 @@ export default function AssessmentPage() {
     files.forEach((f) => fd.append("images", f.file, f.file.name));
 
     try {
-      const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const res = await fetch(`${baseUrl}/api/assessments/generate`, {
+      const res = await fetch(`/api/assessments/generate`, {
         method: "POST",
         body: fd,
       });
@@ -150,7 +155,6 @@ export default function AssessmentPage() {
       };
       setResult(data);
       setStage("done");
-      // auto-download
       downloadPdfBase64(
         data.pdfBase64,
         `${safeName(studentName)}_평가서_${dateForFile()}.pdf`,
@@ -173,42 +177,34 @@ export default function AssessmentPage() {
   return (
     <div className="min-h-[100dvh] bg-slate-50 flex flex-col">
       <header className="bg-[#1a2e5a] text-white shadow-md">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#c9a227] flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-[#1a2e5a]" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg leading-none">{ACADEMY}</h1>
-              <p className="text-xs text-white/70 mt-0.5">평가서 생성</p>
-            </div>
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-[#c9a227] flex items-center justify-center">
+            <ClipboardCheck className="w-5 h-5 text-[#1a2e5a]" />
           </div>
-          <Link href="/">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" /> 자료 생성으로
-            </Button>
-          </Link>
+          <div>
+            <h1 className="font-bold text-lg leading-none">{ACADEMY}</h1>
+            <p className="text-xs text-white/70 mt-0.5">
+              영어홀릭 평가서 자동 생성
+            </p>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 max-w-5xl mx-auto w-full p-6 space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-[#1a2e5a] mb-1">
-            영어홀릭 평가서 생성
+          <h2 className="text-xl font-bold text-[#1a2e5a] mb-1 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#c9a227]" />
+            영어홀릭 학업 성취도 평가서
           </h2>
           <p className="text-sm text-slate-600">
-            시험지 사진을 올리면 AI가 채점·분석해서 학부모에게 보낼 평가서 PDF를
+            시험지 사진을 올리면 AI가 채점·분석해서 학부모님께 보낼 평가서 PDF를
             만들어 드립니다. (최대 {MAX_FILES}장 · HEIC/JPG/PNG)
           </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-1.5">
               <Label htmlFor="student">학생 이름</Label>
               <Input
                 id="student"
@@ -218,7 +214,7 @@ export default function AssessmentPage() {
                 disabled={stage === "uploading"}
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>담당 선생님</Label>
               <Select
                 value={teacher}
@@ -240,7 +236,9 @@ export default function AssessmentPage() {
           </div>
 
           <div>
-            <Label>시험지 사진 ({files.length}/{MAX_FILES})</Label>
+            <Label>
+              시험지 사진 ({files.length}/{MAX_FILES})
+            </Label>
             <div
               className="mt-2 border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-[#c9a227] hover:bg-amber-50/40 transition"
               onClick={() => fileInput.current?.click()}
@@ -388,6 +386,10 @@ export default function AssessmentPage() {
             </div>
           </div>
         )}
+
+        <footer className="text-center text-xs text-slate-400 pt-4 pb-2">
+          {ACADEMY} · 영어홀릭 평가서 시스템
+        </footer>
       </main>
     </div>
   );
@@ -402,4 +404,3 @@ function dateForFile(): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
-
