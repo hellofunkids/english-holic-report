@@ -390,9 +390,14 @@ export default function Home() {
 
             {typeof result.report.totalScore === "number" && (
               <div className="bg-[#1a2e5a] text-white rounded-xl p-4 flex items-center justify-between">
-                <span className="text-sm">종합 평가</span>
-                <span className="text-lg font-bold text-[#c9a227]">
-                  {scoreLabel(result.report.totalScore)}
+                <div className="flex items-baseline gap-3">
+                  <span className="text-sm">총점</span>
+                  <span className="text-xs text-slate-300">
+                    {scoreLabel(result.report.totalScore)}
+                  </span>
+                </div>
+                <span className="text-2xl font-bold text-[#c9a227]">
+                  {result.report.totalScore}점
                 </span>
               </div>
             )}
@@ -410,9 +415,12 @@ export default function Home() {
                   >
                     <p className="text-xs text-slate-500">{DOMAIN_LABELS[k]}</p>
                     <p
-                      className="text-sm font-bold mt-1"
+                      className="text-xl font-bold mt-1"
                       style={{ color }}
                     >
+                      {v}점
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       {scoreLabel(v)}
                     </p>
                   </div>

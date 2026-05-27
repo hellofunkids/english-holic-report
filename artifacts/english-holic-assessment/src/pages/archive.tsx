@@ -201,7 +201,7 @@ export default function Archive() {
                       </span>
                       {typeof item.totalScore === "number" && (
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#1a2e5a] text-[#c9a227]">
-                          {scoreLabel(item.totalScore)}
+                          {item.totalScore}점 · {scoreLabel(item.totalScore)}
                         </span>
                       )}
                     </div>

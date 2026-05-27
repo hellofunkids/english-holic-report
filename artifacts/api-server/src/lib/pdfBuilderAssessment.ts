@@ -363,18 +363,29 @@ function drawScoreList(
       .fillColor(NAVY)
       .font(F_BOLD)
       .fontSize(9.5)
-      .text(d.label, x, ry + 4, { width: 60, lineBreak: false });
+      .text(d.label, x, ry + 4, { width: 50, lineBreak: false });
 
-    // Bar (visual cue only, no number)
-    const barX = x + 64;
-    const barW = w - 64 - badgeW - 8;
+    // Numeric score
+    doc
+      .fillColor(scoreColor(value))
+      .font(F_BOLD)
+      .fontSize(12)
+      .text(`${value}점`, x + 52, ry + 2, {
+        width: 36,
+        align: "right",
+        lineBreak: false,
+      });
+
+    // Bar visual
+    const barX = x + 96;
+    const barW = w - 96 - badgeW - 8;
     if (barW > 20) {
       doc.roundedRect(barX, ry + 6, barW, 8, 4).fill("#eceff5");
       const fillW = Math.max(2, (barW * value) / 100);
       doc.roundedRect(barX, ry + 6, fillW, 8, 4).fill(scoreColor(value));
     }
 
-    // Badge with grade label
+    // Grade badge
     drawBadge(doc, x + w - badgeW, ry + 3, value, badgeW);
   }
 }
@@ -405,19 +416,23 @@ function drawTotalScoreBand(
   w: number,
   total: number,
 ) {
-  const color = scoreColor(total);
   const label = scoreLabel(total);
   doc.roundedRect(x, y, w, 26, 6).fill(NAVY);
   doc
     .fillColor("white")
     .font(F_BOLD)
     .fontSize(10)
-    .text("종합 평가 (Overall)", x + 14, y + 7, { lineBreak: false });
+    .text("총점 (Total)", x + 14, y + 7, { lineBreak: false });
   doc
-    .fillColor(color === RED ? "#ffd7b0" : GOLD)
+    .fillColor("white")
+    .font(F_REG)
+    .fontSize(9)
+    .text(label, x + 80, y + 9, { lineBreak: false });
+  doc
+    .fillColor(GOLD)
     .font(F_BOLD)
-    .fontSize(13)
-    .text(label, x, y + 6, {
+    .fontSize(14)
+    .text(`${total} / 100`, x, y + 5, {
       width: w - 14,
       align: "right",
       lineBreak: false,
@@ -443,6 +458,12 @@ function scoreLabel(v: number): string {
 }
 
 // ───────────────────────── Diagnosis Cards ─────────────────────────
+// IMPORTANT: 텍스트 잘림 방지 규칙
+//  - 카드/박스 안의 본문 텍스트에는 절대 `ellipsis: true`를 쓰지 말 것.
+//  - 항목별 텍스트는 `doc.heightOfString(...)`으로 측정해서 박스 높이를 동적으로 계산.
+//  - 내용 캡(글자 수 제한)은 routes/assessments.ts에서 적용되므로 캡을 늘릴 땐
+//    여기 박스/카드 높이도 함께 키워야 함.
+//  - 페이지 합계는 PAGE_BOTTOM_LIMIT 안에 들어와야 함 (테스트: /tmp/test_layout.cjs).
 
 function drawDiagnosisCards(
   doc: PDFKit.PDFDocument,
