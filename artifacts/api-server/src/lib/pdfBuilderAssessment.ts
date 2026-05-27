@@ -81,45 +81,110 @@ export function buildAssessmentReportPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    // Cap to first 3 items at render time as a safety net
+    // Cap items at render time as a safety net
     const strengths = report.strengths.slice(0, 3);
     const improvements = report.improvements.slice(0, 3);
-    const nextSteps = report.nextSteps.slice(0, 3);
+    const nextSteps = report.nextSteps.slice(0, 4);
 
-    // ── Page 1 ────────────────────────────────────────────────
+    const PAGE_BOTTOM_LIMIT = doc.page.height - 50; // last drawable Y
+
+    // ── Page 1: header, info, scores, 총평, 잘한 점, 보완할 점 ─────────
     drawHeader(doc, meta);
-    let y = 130;
+    let y = 135;
 
     y = drawInfoCard(doc, meta, y);
-    y += 8;
+    y += 12;
 
     y = drawSection(doc, "영역별 평가", y);
     y = drawDomainScores(doc, report.domainScores, y, report.totalScore);
-    y += 6;
+    y += 12;
 
     y = drawSection(doc, "총평", y);
-    y = drawParagraph(doc, report.overallComment, y, 760);
-    y += 6;
+    y = drawParagraph(doc, report.overallComment, y, PAGE_BOTTOM_LIMIT);
+    y += 12;
 
     y = drawSection(doc, "잘한 점", y, GREEN);
-    y = drawBullets(doc, strengths, y, GREEN, 760);
+    y = drawBullets(doc, strengths, y, GREEN, PAGE_BOTTOM_LIMIT);
+    y += 12;
 
-    // ── Page 2 ────────────────────────────────────────────────
+    y = drawSection(doc, "보완할 점", y, RED);
+    y = drawBullets(doc, improvements, y, RED, PAGE_BOTTOM_LIMIT);
+
+    // ── Page 2: 다음 학습 제안 + 학부모 안내 + signature ──────────────
     doc.addPage();
     let y2 = 50;
 
-    y2 = drawSection(doc, "보완할 점", y2, RED);
-    y2 = drawBullets(doc, improvements, y2, RED, doc.page.height - 180);
-    y2 += 8;
-
     y2 = drawSection(doc, "다음 학습 제안", y2);
-    y2 = drawBullets(doc, nextSteps, y2, NAVY, doc.page.height - 180);
+    y2 = drawBullets(doc, nextSteps, y2, NAVY, doc.page.height - 220);
+    y2 += 18;
+
+    y2 = drawParentGuide(doc, meta, y2);
 
     drawSignature(doc, meta);
     drawPageFooters(doc);
 
     doc.end();
   });
+}
+
+function drawParentGuide(
+  doc: PDFKit.PDFDocument,
+  meta: AssessmentMeta,
+  y: number,
+): number {
+  const x = 40;
+  const w = doc.page.width - 80;
+  const h = 150;
+  if (y + h > doc.page.height - 100) {
+    return y;
+  }
+
+  doc.roundedRect(x, y, w, h, 8).fillAndStroke("#f7f3e8", GOLD);
+
+  doc
+    .fillColor(NAVY)
+    .font(F_BOLD)
+    .fontSize(12)
+    .text("학부모님께 드리는 안내", x + 16, y + 14);
+
+  doc
+    .strokeColor(GOLD)
+    .lineWidth(1)
+    .moveTo(x + 16, y + 32)
+    .lineTo(x + w - 16, y + 32)
+    .stroke();
+
+  const guideLines: Array<[string, string]> = [
+    [
+      "1. 평가 항목 이해",
+      "어휘·문법·독해·작문 4개 영역으로 나누어 채점하며, 점수는 절대평가가 아닌 학습 진단 지표입니다.",
+    ],
+    [
+      "2. 가정 학습 활용",
+      "‘다음 학습 제안’의 항목을 매일 5~10분이라도 꾸준히 함께 해주시면 다음 평가에서 눈에 띄는 변화를 확인하실 수 있습니다.",
+    ],
+    [
+      "3. 추가 상담 안내",
+      `평가 결과나 학습 방향에 대해 더 자세한 상담을 원하시면 담당 선생님(${meta.teacherName})께 연락 주세요.`,
+    ],
+  ];
+
+  let gy = y + 42;
+  for (const [title, body] of guideLines) {
+    doc
+      .fillColor(NAVY)
+      .font(F_BOLD)
+      .fontSize(9.5)
+      .text(title, x + 16, gy, { width: w - 32 });
+    doc
+      .fillColor("#3a3a3a")
+      .font(F_REG)
+      .fontSize(9)
+      .text(body, x + 16, gy + 13, { width: w - 32, lineGap: 1.5 });
+    gy += 36;
+  }
+
+  return y + h;
 }
 
 function drawHeader(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {

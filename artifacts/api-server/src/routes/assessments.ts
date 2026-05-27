@@ -133,10 +133,10 @@ router.post(
 다음 항목을 포함한 JSON으로만 응답하세요:
 
 {
-  "overallComment": "총평 (정확히 3문장, 학부모가 읽기 좋은 따뜻한 한국어, 전체 200자 이내)",
-  "strengths": ["잘한 점 정확히 3개 (각 항목 1문장, 60자 이내, 구체적 근거 포함)"],
-  "improvements": ["보완할 점 정확히 3개 (각 항목 1문장, 60자 이내, 구체적 실수 패턴 포함)"],
-  "nextSteps": ["학습 제안 정확히 3개 (각 항목 1문장, 60자 이내, 실천 가능한 구체 행동)"],
+  "overallComment": "총평 (정확히 3-4문장, 학부모가 읽기 좋은 따뜻한 한국어, 전체 250자 내외)",
+  "strengths": ["잘한 점 정확히 3개 (각 항목 1-2문장, 80자 내외, 구체적 근거 포함)"],
+  "improvements": ["보완할 점 정확히 3개 (각 항목 1-2문장, 80자 내외, 구체적 실수 패턴 포함)"],
+  "nextSteps": ["학습 제안 정확히 4개 (각 항목 1-2문장, 90자 내외, 실천 가능한 구체 행동)"],
   "domainScores": {
     "vocabulary": 0-100점 정수 (어휘 사용의 정확성과 다양성),
     "grammar": 0-100점 정수 (문법 정확도),
@@ -147,9 +147,10 @@ router.post(
 }
 
 엄격한 규칙 (반드시 준수):
-- 평가서는 **A4 2페이지에 딱 맞춰** 인쇄됩니다. 분량 초과 시 잘립니다.
-- strengths / improvements / nextSteps는 **정확히 3개씩**, 각 항목은 **1문장, 60자 이내**.
-- overallComment는 **정확히 3문장, 200자 이내**.
+- 평가서는 **A4 양면 1장 (총 2페이지)** 에 딱 맞춰 인쇄됩니다.
+- strengths / improvements는 **정확히 3개씩**, nextSteps는 **정확히 4개**.
+- 각 항목 글자 수는 위에 명시된 범위를 지킬 것 (너무 짧으면 빈 공간이 생김).
+- overallComment는 **정확히 3-4문장, 250자 내외**.
 - 모든 텍스트는 한국어 (영어 단어/문장은 인용할 때만).
 - 코멘트는 학부모가 이해하기 쉽고 따뜻한 톤.
 - JSON만 반환, 다른 텍스트 없이.`;
@@ -191,10 +192,10 @@ router.post(
       // Enforce hard caps so PDF fits in 2 pages even if AI ignored prompt
       const cap = (s: string, max: number) =>
         s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
-      report.strengths = report.strengths.slice(0, 3).map((s) => cap(s, 90));
-      report.improvements = report.improvements.slice(0, 3).map((s) => cap(s, 90));
-      report.nextSteps = report.nextSteps.slice(0, 3).map((s) => cap(s, 90));
-      report.overallComment = cap(report.overallComment, 260);
+      report.strengths = report.strengths.slice(0, 3).map((s) => cap(s, 130));
+      report.improvements = report.improvements.slice(0, 3).map((s) => cap(s, 130));
+      report.nextSteps = report.nextSteps.slice(0, 4).map((s) => cap(s, 140));
+      report.overallComment = cap(report.overallComment, 320);
     } catch (err) {
       req.log.error({ err }, "AI assessment generation failed");
       res
