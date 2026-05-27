@@ -542,7 +542,7 @@ function drawSentenceClinic(
   const fullW = doc.page.width - 80;
   const gap = 12;
   const colW = (fullW - gap) / 2;
-  const h = 145;
+  const h = 215;
 
   // Left: Best sentence (blue)
   drawClinicCard(
@@ -598,31 +598,39 @@ function drawClinicCard(
     .fontSize(9.5)
     .text(title, x + 12, y + 9, { lineBreak: false });
 
-  // Quoted sentence in italic-feel (just bold navy)
+  // Measure quote to fit naturally (min 3 lines, max 5)
+  const quoteText = `"${quote}"`;
+  const quoteInnerW = w - 36;
+  doc.font(F_BOLD).fontSize(10);
+  const measuredQuoteH = doc.heightOfString(quoteText, {
+    width: quoteInnerW,
+    lineGap: 2,
+  });
+  const quoteH = Math.max(42, Math.min(72, measuredQuoteH + 12));
+
   const quoteY = y + 30;
-  const quoteH = 48;
   doc.roundedRect(x + 12, quoteY, w - 24, quoteH, 5).fill("white");
   doc
     .fillColor(NAVY)
     .font(F_BOLD)
     .fontSize(10)
-    .text(`"${quote}"`, x + 18, quoteY + 6, {
-      width: w - 36,
+    .text(quoteText, x + 18, quoteY + 6, {
+      width: quoteInnerW,
       height: quoteH - 8,
-      lineGap: 1,
-      ellipsis: true,
+      lineGap: 2,
     });
 
-  // Detail / reason
+  // Detail / reason — fill remaining space without truncation
+  const detailY = quoteY + quoteH + 8;
+  const detailH = y + h - detailY - 10;
   doc
     .fillColor(GREY)
     .font(F_REG)
     .fontSize(8.5)
-    .text(detail, x + 12, y + 30 + quoteH + 6, {
+    .text(detail, x + 12, detailY, {
       width: w - 24,
-      height: h - 30 - quoteH - 12,
-      lineGap: 1.5,
-      ellipsis: true,
+      height: detailH,
+      lineGap: 2,
     });
 }
 
