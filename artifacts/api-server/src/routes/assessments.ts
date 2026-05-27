@@ -133,10 +133,10 @@ router.post(
 다음 항목을 포함한 JSON으로만 응답하세요:
 
 {
-  "overallComment": "학생의 전반적인 영어 실력과 이번 시험 결과에 대한 따뜻하면서도 솔직한 총평 (4-6문장, 학부모가 읽기 좋은 한국어)",
-  "strengths": ["잘한 점 3-4개, 구체적인 문항이나 표현을 근거로 (한국어, 각 1-2문장)"],
-  "improvements": ["보완이 필요한 점 3-4개, 구체적인 실수 패턴과 함께 (한국어, 각 1-2문장)"],
-  "nextSteps": ["가정학습/학원학습에서 다음으로 집중할 학습 제안 3-4개 (한국어, 각 1-2문장)"],
+  "overallComment": "총평 (정확히 3문장, 학부모가 읽기 좋은 따뜻한 한국어, 전체 200자 이내)",
+  "strengths": ["잘한 점 정확히 3개 (각 항목 1문장, 60자 이내, 구체적 근거 포함)"],
+  "improvements": ["보완할 점 정확히 3개 (각 항목 1문장, 60자 이내, 구체적 실수 패턴 포함)"],
+  "nextSteps": ["학습 제안 정확히 3개 (각 항목 1문장, 60자 이내, 실천 가능한 구체 행동)"],
   "domainScores": {
     "vocabulary": 0-100점 정수 (어휘 사용의 정확성과 다양성),
     "grammar": 0-100점 정수 (문법 정확도),
@@ -146,11 +146,13 @@ router.post(
   "totalScore": 0-100 정수 (선택사항, 시험지에 총점이 있으면 그 점수)
 }
 
-규칙:
-- 모든 텍스트는 한국어로 작성 (영어 단어/문장은 인용할 때만)
-- 코멘트는 학부모가 이해하기 쉽고 따뜻한 톤
-- 평가서는 2페이지로 출력될 예정이니, 각 항목은 핵심만 간결하게 작성
-- JSON만 반환, 다른 텍스트 없이`;
+엄격한 규칙 (반드시 준수):
+- 평가서는 **A4 2페이지에 딱 맞춰** 인쇄됩니다. 분량 초과 시 잘립니다.
+- strengths / improvements / nextSteps는 **정확히 3개씩**, 각 항목은 **1문장, 60자 이내**.
+- overallComment는 **정확히 3문장, 200자 이내**.
+- 모든 텍스트는 한국어 (영어 단어/문장은 인용할 때만).
+- 코멘트는 학부모가 이해하기 쉽고 따뜻한 톤.
+- JSON만 반환, 다른 텍스트 없이.`;
 
     let report: AssessmentReport;
     try {
@@ -186,6 +188,13 @@ router.post(
         throw new Error("AI response failed validation");
       }
       report = parsed.data;
+      // Enforce hard caps so PDF fits in 2 pages even if AI ignored prompt
+      const cap = (s: string, max: number) =>
+        s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+      report.strengths = report.strengths.slice(0, 3).map((s) => cap(s, 90));
+      report.improvements = report.improvements.slice(0, 3).map((s) => cap(s, 90));
+      report.nextSteps = report.nextSteps.slice(0, 3).map((s) => cap(s, 90));
+      report.overallComment = cap(report.overallComment, 260);
     } catch (err) {
       req.log.error({ err }, "AI assessment generation failed");
       res
