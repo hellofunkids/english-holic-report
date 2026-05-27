@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { downloadPdfBase64, safeFilename } from "@/lib/download";
+import { downloadPdfBase64, openPdfBase64, safeFilename } from "@/lib/download";
 
 import {
   useListBooks,
@@ -514,8 +514,8 @@ function GenerateDialog({
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 space-y-1">
                 <p className="font-semibold text-[#1a2e5a]">생성되는 자료 4종</p>
-                <p>· 단어장 (20개 단어 + 한국어 뜻 + 예문)</p>
-                <p>· 어휘 퀴즈지 (15문항, 4가지 유형 혼합)</p>
+                <p>· 단어장 (20개 단어 + 한글 발음 + 뜻 + 예문)</p>
+                <p>· 어휘 퀴즈지 (20문항, 빈칸/뜻 고르기/단어 고르기/스펠링 쓰기)</p>
                 <p>· 독해 퀴즈지 (20문항 객관식)</p>
                 <p>· 정답지 (어휘 + 독해 통합)</p>
               </div>
@@ -541,6 +541,14 @@ function GenerateDialog({
 }
 
 // ─── Material Card ───────────────────────────────────────────────────────────
+type PdfBundleKey =
+  | "vocabListPdfBase64"
+  | "vocabQuizPdfBase64"
+  | "readingQuizPdfBase64"
+  | "answerKeyPdfBase64";
+
+type LoadedBundle = Record<PdfBundleKey, string>;
+
 function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId: number }) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -554,26 +562,73 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
     },
   });
 
-  const handleDownload = () => {
+  // Cache the fetched PDF bundle so repeated "view" clicks don't re-call the server.
+  const [bundle, setBundle] = useState<LoadedBundle | null>(null);
+  const [pendingAction, setPendingAction] =
+    useState<null | { kind: "download" } | { kind: "view"; key: PdfBundleKey; filename: string }>(
+      null,
+    );
+
+  const baseName = `${safeFilename(material.bookTitle)}_${safeFilename(material.chapterTitle)}`;
+  const fileNames: Record<PdfBundleKey, string> = {
+    vocabListPdfBase64: `${baseName}_단어장.pdf`,
+    vocabQuizPdfBase64: `${baseName}_어휘퀴즈.pdf`,
+    readingQuizPdfBase64: `${baseName}_독해퀴즈.pdf`,
+    answerKeyPdfBase64: `${baseName}_정답지.pdf`,
+  };
+
+  const ensureBundle = (then: (b: LoadedBundle) => void) => {
+    if (bundle) {
+      then(bundle);
+      return;
+    }
     download.mutate(
       { materialId: material.id },
       {
         onSuccess: (result) => {
-          const base = `${safeFilename(material.bookTitle)}_${safeFilename(material.chapterTitle)}`;
-          downloadPdfBase64(result.vocabListPdfBase64, `${base}_단어장.pdf`);
-          downloadPdfBase64(result.vocabQuizPdfBase64, `${base}_어휘퀴즈.pdf`);
-          downloadPdfBase64(result.readingQuizPdfBase64, `${base}_독해퀴즈.pdf`);
-          downloadPdfBase64(result.answerKeyPdfBase64, `${base}_정답지.pdf`);
-          toast({ title: "4개의 PDF가 다운로드되었습니다" });
+          const b: LoadedBundle = {
+            vocabListPdfBase64: result.vocabListPdfBase64,
+            vocabQuizPdfBase64: result.vocabQuizPdfBase64,
+            readingQuizPdfBase64: result.readingQuizPdfBase64,
+            answerKeyPdfBase64: result.answerKeyPdfBase64,
+          };
+          setBundle(b);
+          then(b);
         },
         onError: () =>
-          toast({ title: "다운로드 실패", variant: "destructive" }),
+          toast({ title: "불러오기 실패", description: "다시 시도해 주세요", variant: "destructive" }),
+        onSettled: () => setPendingAction(null),
       },
     );
   };
 
+  const handleDownloadAll = () => {
+    setPendingAction({ kind: "download" });
+    ensureBundle((b) => {
+      downloadPdfBase64(b.vocabListPdfBase64, fileNames.vocabListPdfBase64);
+      downloadPdfBase64(b.vocabQuizPdfBase64, fileNames.vocabQuizPdfBase64);
+      downloadPdfBase64(b.readingQuizPdfBase64, fileNames.readingQuizPdfBase64);
+      downloadPdfBase64(b.answerKeyPdfBase64, fileNames.answerKeyPdfBase64);
+      toast({ title: "4개의 PDF가 다운로드되었습니다" });
+      setPendingAction(null);
+    });
+  };
+
+  const handleView = (key: PdfBundleKey) => {
+    setPendingAction({ kind: "view", key, filename: fileNames[key] });
+    ensureBundle((b) => {
+      openPdfBase64(b[key]);
+      setPendingAction(null);
+    });
+  };
+
   const date = new Date(material.createdAt);
   const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+
+  const isLoading = download.isPending;
+  const isViewing = (key: PdfBundleKey) =>
+    isLoading && pendingAction?.kind === "view" && pendingAction.key === key;
+  const isDownloadingAll = isLoading && pendingAction?.kind === "download";
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-[#c9a227] transition-colors">
@@ -599,19 +654,47 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
         </Button>
       </div>
 
+      <p className="text-[11px] text-slate-500 mb-1.5">파일을 클릭하면 새 창에서 열립니다</p>
       <div className="grid grid-cols-4 gap-2 mb-3">
-        <PdfBadge icon={BookText} label="단어장" count={material.vocabCount} />
-        <PdfBadge icon={ClipboardList} label="어휘퀴즈" count={material.vocabQuizCount} />
-        <PdfBadge icon={FileText} label="독해퀴즈" count={material.readingQuizCount} />
-        <PdfBadge icon={Key} label="정답지" />
+        <PdfBadge
+          icon={BookText}
+          label="단어장"
+          count={material.vocabCount}
+          loading={isViewing("vocabListPdfBase64")}
+          disabled={isLoading}
+          onClick={() => handleView("vocabListPdfBase64")}
+        />
+        <PdfBadge
+          icon={ClipboardList}
+          label="어휘퀴즈"
+          count={material.vocabQuizCount}
+          loading={isViewing("vocabQuizPdfBase64")}
+          disabled={isLoading}
+          onClick={() => handleView("vocabQuizPdfBase64")}
+        />
+        <PdfBadge
+          icon={FileText}
+          label="독해퀴즈"
+          count={material.readingQuizCount}
+          loading={isViewing("readingQuizPdfBase64")}
+          disabled={isLoading}
+          onClick={() => handleView("readingQuizPdfBase64")}
+        />
+        <PdfBadge
+          icon={Key}
+          label="정답지"
+          loading={isViewing("answerKeyPdfBase64")}
+          disabled={isLoading}
+          onClick={() => handleView("answerKeyPdfBase64")}
+        />
       </div>
 
       <Button
-        onClick={handleDownload}
-        disabled={download.isPending}
+        onClick={handleDownloadAll}
+        disabled={isLoading}
         className="w-full bg-[#1a2e5a] hover:bg-[#142348] gap-2"
       >
-        {download.isPending ? (
+        {isDownloadingAll ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <Download className="w-4 h-4" />
@@ -626,16 +709,31 @@ function PdfBadge({
   icon: Icon,
   label,
   count,
+  loading,
+  disabled,
+  onClick,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   count?: number;
+  loading?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1 py-2 px-1 bg-slate-50 rounded-lg border border-slate-100">
-      <Icon className="w-4 h-4 text-[#c9a227]" />
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center justify-center gap-1 py-2 px-1 bg-slate-50 rounded-lg border border-slate-100 hover:bg-[#c9a227]/10 hover:border-[#c9a227] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {loading ? (
+        <Loader2 className="w-4 h-4 text-[#c9a227] animate-spin" />
+      ) : (
+        <Icon className="w-4 h-4 text-[#c9a227]" />
+      )}
       <p className="text-[11px] font-semibold text-[#1a2e5a]">{label}</p>
       {count !== undefined ? <p className="text-[10px] text-slate-500">{count}개</p> : null}
-    </div>
+    </button>
   );
 }

@@ -18,13 +18,14 @@ export type Book = typeof booksTable.$inferSelect;
 // ── Embedded JSON types ────────────────────────────────────────────────────
 export type VocabEntry = {
   word: string;
+  pronunciation: string;
   meaning: string;
   example: string;
 };
 
 export type VocabQuestion = {
   number: number;
-  type: "fill_blank" | "match_meaning" | "choose_word" | "translation";
+  type: "fill_blank" | "match_meaning" | "choose_word" | "spelling";
   question: string;
   options?: string[];
   answer: string;

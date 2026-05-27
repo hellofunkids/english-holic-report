@@ -133,13 +133,13 @@ export function buildVocabListPdf(
     drawHeader(doc, "단어장 (Vocabulary List)", bookTitle, chapterTitle, level);
     doc.moveTo(50, 156).lineTo(doc.page.width - 50, 156).strokeColor(GOLD).lineWidth(2).stroke();
 
-    const cols = { num: 50, word: 80, meaning: 200, example: 320 };
-    const colWidth = { word: 115, meaning: 115, example: doc.page.width - 50 - 320 };
+    const cols = { num: 50, word: 80, meaning: 220, example: 340 };
+    const colWidth = { word: 135, meaning: 115, example: doc.page.width - 50 - 340 };
 
     const drawTableHeader = (startY: number): number => {
       doc.fillColor(NAVY).fontSize(11).font(F_BOLD);
       doc.text("#", cols.num, startY);
-      doc.text("Word", cols.word, startY);
+      doc.text("Word / 발음", cols.word, startY);
       doc.text("뜻", cols.meaning, startY);
       doc.text("Example", cols.example, startY);
       const next = startY + 18;
@@ -156,21 +156,28 @@ export function buildVocabListPdf(
     let y = drawTableHeader(174);
 
     vocab.forEach((v, i) => {
-      const meaningH = doc.heightOfString(v.meaning, { width: colWidth.meaning });
-      const wordH = doc.heightOfString(v.word, { width: colWidth.word });
-      const exampleH = doc.heightOfString(v.example, { width: colWidth.example });
-      const rowH = Math.max(wordH, meaningH, exampleH, 14) + 10;
+      const pronText = v.pronunciation ? `[${v.pronunciation}]` : "";
+      const wordH = doc.font(F_BOLD).fontSize(11).heightOfString(v.word, { width: colWidth.word });
+      const pronH = pronText
+        ? doc.font(F_REG).fontSize(9).heightOfString(pronText, { width: colWidth.word })
+        : 0;
+      const wordBlockH = wordH + (pronH ? pronH + 1 : 0);
+      const meaningH = doc.font(F_REG).fontSize(10).heightOfString(v.meaning, { width: colWidth.meaning });
+      const exampleH = doc.font(F_REG).fontSize(9.5).heightOfString(v.example, { width: colWidth.example });
+      const rowH = Math.max(wordBlockH, meaningH, exampleH, 14) + 10;
 
       if (y + rowH > doc.page.height - 60) {
         doc.addPage();
         y = drawTableHeader(50);
       }
 
-      doc.fillColor("#666").font(F_REG).text(String(i + 1), cols.num, y, { width: 22 });
-      doc.fillColor(NAVY).font(F_BOLD).text(v.word, cols.word, y, { width: colWidth.word });
-      doc.fillColor("#222").font(F_REG).text(v.meaning, cols.meaning, y, { width: colWidth.meaning });
+      doc.fillColor("#666").font(F_REG).fontSize(10).text(String(i + 1), cols.num, y, { width: 22 });
+      doc.fillColor(NAVY).font(F_BOLD).fontSize(11).text(v.word, cols.word, y, { width: colWidth.word });
+      if (pronText) {
+        doc.fillColor(GOLD).font(F_REG).fontSize(9).text(pronText, cols.word, y + wordH + 1, { width: colWidth.word });
+      }
+      doc.fillColor("#222").font(F_REG).fontSize(10).text(v.meaning, cols.meaning, y, { width: colWidth.meaning });
       doc.fillColor("#555").font(F_REG).fontSize(9.5).text(v.example, cols.example, y, { width: colWidth.example });
-      doc.font(F_REG).fontSize(10);
 
       y += rowH;
       doc.moveTo(50, y - 4).lineTo(doc.page.width - 50, y - 4).strokeColor("#eee").lineWidth(0.5).stroke();
@@ -185,7 +192,7 @@ const vocabTypeLabel: Record<VocabQuestion["type"], string> = {
   fill_blank: "빈칸 채우기",
   match_meaning: "뜻 고르기",
   choose_word: "단어 고르기",
-  translation: "영작",
+  spelling: "스펠링 쓰기",
 };
 
 export function buildVocabQuizPdf(

@@ -17,13 +17,14 @@ import {
 // ── Strict AI response schemas ────────────────────────────────────────────
 const VocabEntrySchema = z.object({
   word: z.string().min(1),
+  pronunciation: z.string().min(1),
   meaning: z.string().min(1),
   example: z.string().min(1),
 });
 
 const VocabQuestionSchema = z.object({
   number: z.number().int().positive(),
-  type: z.enum(["fill_blank", "match_meaning", "choose_word", "translation"]),
+  type: z.enum(["fill_blank", "match_meaning", "choose_word", "spelling"]),
   question: z.string().min(1),
   options: z.array(z.string()).optional(),
   answer: z.string().min(1),
@@ -74,15 +75,17 @@ Generate three things in a SINGLE JSON response:
 
 1. VOCABULARY LIST — exactly 20 important vocabulary words from this chapter of the book.
    - Choose words that are actually used in the book and appropriate for the level
-   - For each: english word (lowercase, base form), Korean meaning, and a SHORT English example sentence (5-12 words) that uses the word naturally
+   - For each: english word (lowercase, base form), Korean phonetic pronunciation, Korean meaning, and a SHORT English example sentence (5-12 words) that uses the word naturally
+   - "pronunciation" is how to READ the English word in Korean Hangul (한글 발음), e.g. brave → "브레이브", suddenly → "써든리", escape → "이스케이프". This helps young Korean students pronounce the word.
    - Korean meanings should be natural Korean (한국어), like "용감한", "도망치다", "갑자기"
 
-2. VOCABULARY QUIZ — exactly 15 questions testing the vocabulary above. Mix these 4 types:
+2. VOCABULARY QUIZ — exactly 20 questions, ONE QUESTION PER VOCABULARY WORD (in the same order as the vocabulary list). Mix these 4 types:
    - "fill_blank": Sentence with one ___ blank. Answer is the English word that fits.
    - "match_meaning": Show an English word, ask its Korean meaning, give 4 multiple choice options (Korean). Answer is one of the options (the Korean meaning text).
    - "choose_word": Show a Korean meaning + example sentence with blank, give 4 English word options. Answer is one of the options.
-   - "translation": Show a Korean sentence using the word, student writes the English word. (No options.) Answer is the English word.
-   - Number them 1 to 15. Use a varied mix of all 4 types.
+   - "spelling": Show the Korean meaning (and optionally Korean pronunciation in parentheses), ask the student to WRITE the English spelling. (No options.) Answer is the English word.
+     Example question text: "용감한 (브레이브) — 영어 스펠링을 쓰세요."
+   - Number them 1 to 20. Use a varied mix of all 4 types so every vocabulary word is tested exactly once.
    - For multiple choice questions, provide exactly 4 options as plain strings (no A) prefix). The "answer" field should be the EXACT text of the correct option.
 
 3. READING COMPREHENSION QUIZ — exactly 20 multiple-choice questions about the book.
@@ -95,13 +98,13 @@ Generate three things in a SINGLE JSON response:
 Return ONLY this JSON structure, no other text:
 {
   "vocabulary": [
-    { "word": "brave", "meaning": "용감한", "example": "The brave boy helped his friend." }
+    { "word": "brave", "pronunciation": "브레이브", "meaning": "용감한", "example": "The brave boy helped his friend." }
   ],
   "vocabQuestions": [
     { "number": 1, "type": "fill_blank", "question": "The ___ boy helped his friend.", "answer": "brave" },
     { "number": 2, "type": "match_meaning", "question": "brave", "options": ["용감한", "슬픈", "조용한", "빠른"], "answer": "용감한" },
     { "number": 3, "type": "choose_word", "question": "용감한 — The ___ boy helped his friend.", "options": ["brave", "sad", "quiet", "fast"], "answer": "brave" },
-    { "number": 4, "type": "translation", "question": "그 소년은 용감했다.", "answer": "brave" }
+    { "number": 4, "type": "spelling", "question": "용감한 (브레이브) — 영어 스펠링을 쓰세요.", "answer": "brave" }
   ],
   "readingQuestions": [
     { "number": 1, "question": "Where does the story begin?", "options": ["A) On a farm", "B) In a city", "C) At school", "D) In a forest"], "answer": "A" }
