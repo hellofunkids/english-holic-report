@@ -22,7 +22,7 @@
 - pnpm workspaces, Node 24, TypeScript 5.9
 - Frontend: React + Vite + Tailwind + shadcn/ui + framer-motion
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM (테이블: `books`, `materials` — Book Quiz Lab만 사용)
+- DB: PostgreSQL + Drizzle ORM (테이블: `books`, `materials` — Book Quiz Lab / `assessments` — 영어홀릭 평가서)
 - AI: Anthropic Claude (claude-sonnet-4-6) via Replit AI Integrations 프록시
 - PDF: pdfkit (서버에서 생성, base64로 전송)
 - 이미지: heic-convert (아이폰 HEIC → JPEG)
@@ -55,11 +55,11 @@ artifacts/
 3. 아카이브에서 책별 자료 목록 → "4개 PDF 모두 다운로드"는 저장된 JSON으로 재생성 (AI 재호출 없음)
 
 ### 영어홀릭 평가서 (`/english-holic/`)
-1. 학생 이름 + 담당 선생님(이현진/이진미/강나영) 입력
+1. 학생 이름 + 교재명 + 담당 선생님(이현진/이진미/강나영) 입력
 2. 시험지 사진 1~8장 업로드 (HEIC 자동 변환)
-3. "평가서 생성" → 서버에서 HEIC→JPEG 변환 → Claude vision으로 분석 (총평/잘한 점/보완할 점/다음 학습 제안/문항별 분석/영역별 점수)
-4. PDF 자동 다운로드 + 화면에 총점/영역별/총평 미리보기 표시
-5. 학생별 아카이브 없음 (PDF만 매번 생성)
+3. "평가서 생성" → 서버에서 HEIC→JPEG 변환 → Claude vision으로 분석 (총평/잘한 점/보완할 점/다음 학습 제안/영역별 점수/최고의 문장/교정 예시/학부모 메시지)
+4. PDF 자동 다운로드 (라더 차트 + 문장 클리닉 + 학부모 메시지 포함, 정확히 A4 양면 1장)
+5. 생성된 평가서는 `assessments` 테이블에 자동 저장 → `/english-holic/archive`에서 검색·재다운로드 (AI 재호출 없이 저장된 JSON으로 PDF 재생성)
 
 ## 제품
 

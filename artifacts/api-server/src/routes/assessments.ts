@@ -3,6 +3,8 @@ import multer from "multer";
 import Anthropic from "@anthropic-ai/sdk";
 import heicConvert from "heic-convert";
 import { z } from "zod/v4";
+import { db, assessmentsTable } from "@workspace/db";
+import { eq, desc, ilike } from "drizzle-orm";
 import {
   buildAssessmentReportPdf,
   type AssessmentReport,
@@ -250,6 +252,24 @@ router.post(
       return;
     }
 
+    // Persist to DB so it can be listed/searched later
+    let assessmentId: number | undefined;
+    try {
+      const [row] = await db
+        .insert(assessmentsTable)
+        .values({
+          studentName,
+          teacherName,
+          testTitle: bookName,
+          report,
+        })
+        .returning({ id: assessmentsTable.id });
+      assessmentId = row?.id;
+    } catch (err) {
+      req.log.error({ err }, "Failed to persist assessment");
+      // continue — PDF generation still proceeds
+    }
+
     let pdf: Buffer;
     try {
       pdf = await buildAssessmentReportPdf(report, {
@@ -265,10 +285,90 @@ router.post(
     }
 
     res.status(200).json({
+      id: assessmentId,
       pdfBase64: pdf.toString("base64"),
       report,
     });
   },
 );
+
+/** GET /assessments — list (optional ?q= search by student name) */
+router.get("/assessments", async (req: Request, res: Response) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const rows = await db
+    .select({
+      id: assessmentsTable.id,
+      studentName: assessmentsTable.studentName,
+      teacherName: assessmentsTable.teacherName,
+      testTitle: assessmentsTable.testTitle,
+      createdAt: assessmentsTable.createdAt,
+      totalScore: assessmentsTable.report,
+    })
+    .from(assessmentsTable)
+    .where(q ? ilike(assessmentsTable.studentName, `%${q}%`) : undefined)
+    .orderBy(desc(assessmentsTable.createdAt))
+    .limit(500);
+
+  const list = rows.map((r) => ({
+    id: r.id,
+    studentName: r.studentName,
+    teacherName: r.teacherName,
+    testTitle: r.testTitle,
+    createdAt: r.createdAt,
+    totalScore:
+      r.totalScore && typeof r.totalScore === "object" && "totalScore" in r.totalScore
+        ? (r.totalScore as { totalScore?: number }).totalScore
+        : undefined,
+  }));
+  res.json(list);
+});
+
+/** POST /assessments/:id/pdf — regenerate PDF from stored report (no AI) */
+router.post("/assessments/:id/pdf", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ error: "잘못된 ID입니다." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(assessmentsTable)
+    .where(eq(assessmentsTable.id, id))
+    .limit(1);
+  if (!row) {
+    res.status(404).json({ error: "평가서를 찾을 수 없습니다." });
+    return;
+  }
+  try {
+    const pdf = await buildAssessmentReportPdf(row.report as AssessmentReport, {
+      studentName: row.studentName,
+      teacherName: row.teacherName,
+      testTitle: row.testTitle,
+      date: new Date(row.createdAt).toLocaleDateString("ko-KR"),
+    });
+    res.json({
+      pdfBase64: pdf.toString("base64"),
+      studentName: row.studentName,
+      teacherName: row.teacherName,
+      testTitle: row.testTitle,
+      createdAt: row.createdAt,
+      report: row.report,
+    });
+  } catch (err) {
+    req.log.error({ err, id }, "Assessment PDF regeneration failed");
+    res.status(500).json({ error: "PDF 재생성 실패" });
+  }
+});
+
+/** DELETE /assessments/:id */
+router.delete("/assessments/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ error: "잘못된 ID입니다." });
+    return;
+  }
+  await db.delete(assessmentsTable).where(eq(assessmentsTable.id, id));
+  res.json({ ok: true });
+});
 
 export default router;

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "wouter";
 import {
   BookOpen,
   Upload,
@@ -6,6 +7,7 @@ import {
   FileText,
   Loader2,
   ClipboardCheck,
+  Archive as ArchiveIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,12 +191,20 @@ export default function Home() {
           <div className="w-9 h-9 rounded-lg bg-[#c9a227] flex items-center justify-center">
             <ClipboardCheck className="w-5 h-5 text-[#1a2e5a]" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-bold text-lg leading-none">{ACADEMY}</h1>
             <p className="text-xs text-white/70 mt-0.5">
               영어홀릭 평가서 자동 생성
             </p>
           </div>
+          <Link href="/archive">
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/10 hover:text-white"
+            >
+              <ArchiveIcon className="w-4 h-4 mr-1" /> 평가서 아카이브
+            </Button>
+          </Link>
         </div>
       </header>
 

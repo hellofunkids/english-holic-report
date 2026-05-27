@@ -53,3 +53,32 @@ export const materialsTable = pgTable("materials", {
 });
 
 export type Material = typeof materialsTable.$inferSelect;
+
+// ── Assessments (영어홀릭 평가서) ────────────────────────────────────────
+export type AssessmentReportJson = {
+  overallComment: string;
+  strengths: string[];
+  improvements: string[];
+  nextSteps: string[];
+  domainScores: {
+    vocabulary: number;
+    grammar: number;
+    reading: number;
+    writing: number;
+  };
+  totalScore?: number;
+  bestSentence?: { sentence: string; comment: string };
+  correctionExample?: { original: string; corrected: string; reason: string };
+  parentMessage?: string;
+};
+
+export const assessmentsTable = pgTable("assessments", {
+  id: serial("id").primaryKey(),
+  studentName: text("student_name").notNull(),
+  teacherName: text("teacher_name").notNull(),
+  testTitle: text("test_title").notNull(),
+  report: jsonb("report").$type<AssessmentReportJson>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Assessment = typeof assessmentsTable.$inferSelect;
