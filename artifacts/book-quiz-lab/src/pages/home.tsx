@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Loader2,
   Download,
   Pencil,
+  ClipboardCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -86,6 +88,15 @@ export default function Home() {
               <p className="text-xs text-white/70 mt-0.5">Book Quiz Lab · AI 시험지 자동 생성</p>
             </div>
           </div>
+          <Link href="/assessment">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10"
+            >
+              <ClipboardCheck className="w-4 h-4 mr-1" /> 평가서 생성
+            </Button>
+          </Link>
         </div>
       </header>
 

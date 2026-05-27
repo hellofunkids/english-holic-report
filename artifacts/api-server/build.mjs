@@ -38,6 +38,8 @@ async function buildAll() {
       "pdfkit",
       "fontkit",
       "sharp",
+      "heic-convert",
+      "libheif-js",
       "better-sqlite3",
       "sqlite3",
       "canvas",
