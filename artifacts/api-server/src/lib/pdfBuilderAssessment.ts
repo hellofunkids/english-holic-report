@@ -353,6 +353,7 @@ function drawScoreList(
   w: number,
 ) {
   const rowH = 22;
+  const badgeW = 92;
   for (let i = 0; i < DOMAINS.length; i++) {
     const d = DOMAINS[i];
     const value = clamp(scores[d.key]);
@@ -364,28 +365,17 @@ function drawScoreList(
       .fontSize(9.5)
       .text(d.label, x, ry + 4, { width: 60, lineBreak: false });
 
-    // Score number
-    doc
-      .fillColor(scoreColor(value))
-      .font(F_BOLD)
-      .fontSize(12)
-      .text(`${value}점`, x + 64, ry + 2, {
-        width: 40,
-        align: "right",
-        lineBreak: false,
-      });
-
-    // Bar
-    const barX = x + 112;
-    const barW = w - 112 - 50;
+    // Bar (visual cue only, no number)
+    const barX = x + 64;
+    const barW = w - 64 - badgeW - 8;
     if (barW > 20) {
       doc.roundedRect(barX, ry + 6, barW, 8, 4).fill("#eceff5");
       const fillW = Math.max(2, (barW * value) / 100);
       doc.roundedRect(barX, ry + 6, fillW, 8, 4).fill(scoreColor(value));
     }
 
-    // Badge
-    drawBadge(doc, x + w - 42, ry + 3, value);
+    // Badge with grade label
+    drawBadge(doc, x + w - badgeW, ry + 3, value, badgeW);
   }
 }
 
@@ -394,11 +384,11 @@ function drawBadge(
   x: number,
   y: number,
   value: number,
+  w: number = 38,
 ) {
   const label = scoreLabel(value);
   const color = scoreColor(value);
   const bgColor = scoreSoftColor(value);
-  const w = 38;
   const h = 16;
   doc.roundedRect(x, y, w, h, 8).fillAndStroke(bgColor, color);
   doc
@@ -415,17 +405,19 @@ function drawTotalScoreBand(
   w: number,
   total: number,
 ) {
+  const color = scoreColor(total);
+  const label = scoreLabel(total);
   doc.roundedRect(x, y, w, 26, 6).fill(NAVY);
   doc
     .fillColor("white")
     .font(F_BOLD)
     .fontSize(10)
-    .text("총점 (Total)", x + 14, y + 7, { lineBreak: false });
+    .text("종합 평가 (Overall)", x + 14, y + 7, { lineBreak: false });
   doc
-    .fillColor(GOLD)
+    .fillColor(color === RED ? "#ffd7b0" : GOLD)
     .font(F_BOLD)
-    .fontSize(14)
-    .text(`${total} / 100`, x, y + 5, {
+    .fontSize(13)
+    .text(label, x, y + 6, {
       width: w - 14,
       align: "right",
       lineBreak: false,
@@ -433,19 +425,21 @@ function drawTotalScoreBand(
 }
 
 function scoreColor(v: number): string {
-  if (v >= 80) return GREEN;
-  if (v >= 60) return GOLD;
+  if (v >= 91) return GREEN;
+  if (v >= 81) return GREEN;
+  if (v >= 70) return GOLD;
   return RED;
 }
 function scoreSoftColor(v: number): string {
-  if (v >= 80) return GREEN_SOFT;
-  if (v >= 60) return GOLD_SOFT;
+  if (v >= 81) return GREEN_SOFT;
+  if (v >= 70) return GOLD_SOFT;
   return RED_SOFT;
 }
 function scoreLabel(v: number): string {
-  if (v >= 80) return "우수";
-  if (v >= 60) return "보통";
-  return "기초";
+  if (v >= 91) return "매우 잘함";
+  if (v >= 81) return "잘하고 있어요";
+  if (v >= 70) return "꾸준히 노력 중";
+  return "좀 더 노력해요";
 }
 
 // ───────────────────────── Diagnosis Cards ─────────────────────────

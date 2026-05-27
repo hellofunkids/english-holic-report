@@ -29,6 +29,18 @@ const TEST_TITLE = "영어홀릭";
 const MAX_FILES = 8;
 const BOOK_PLACEHOLDER = "예: Bridge Writing 1";
 
+function scoreLabel(v: number): string {
+  if (v >= 91) return "매우 잘함";
+  if (v >= 81) return "잘하고 있어요";
+  if (v >= 70) return "꾸준히 노력 중";
+  return "좀 더 노력해요";
+}
+function scoreColor(v: number): string {
+  if (v >= 81) return "#1a6b3a";
+  if (v >= 70) return "#c9a227";
+  return "#c0392b";
+}
+
 type Stage = "idle" | "uploading" | "done";
 
 interface ReportPreview {
@@ -378,9 +390,9 @@ export default function Home() {
 
             {typeof result.report.totalScore === "number" && (
               <div className="bg-[#1a2e5a] text-white rounded-xl p-4 flex items-center justify-between">
-                <span className="text-sm">총점</span>
-                <span className="text-2xl font-bold text-[#c9a227]">
-                  {result.report.totalScore}점
+                <span className="text-sm">종합 평가</span>
+                <span className="text-lg font-bold text-[#c9a227]">
+                  {scoreLabel(result.report.totalScore)}
                 </span>
               </div>
             )}
@@ -390,16 +402,18 @@ export default function Home() {
                 Object.keys(DOMAIN_LABELS) as Array<keyof typeof DOMAIN_LABELS>
               ).map((k) => {
                 const v = result.report.domainScores[k];
-                const color =
-                  v >= 80 ? "#1a6b3a" : v >= 60 ? "#c9a227" : "#c0392b";
+                const color = scoreColor(v);
                 return (
                   <div
                     key={k}
                     className="rounded-xl border border-slate-200 p-3"
                   >
                     <p className="text-xs text-slate-500">{DOMAIN_LABELS[k]}</p>
-                    <p className="text-xl font-bold mt-1" style={{ color }}>
-                      {v}점
+                    <p
+                      className="text-sm font-bold mt-1"
+                      style={{ color }}
+                    >
+                      {scoreLabel(v)}
                     </p>
                   </div>
                 );

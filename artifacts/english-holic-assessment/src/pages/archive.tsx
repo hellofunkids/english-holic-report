@@ -25,6 +25,13 @@ interface ListItem {
   totalScore?: number;
 }
 
+function scoreLabel(v: number): string {
+  if (v >= 91) return "매우 잘함";
+  if (v >= 81) return "잘하고 있어요";
+  if (v >= 70) return "꾸준히 노력 중";
+  return "좀 더 노력해요";
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -194,7 +201,7 @@ export default function Archive() {
                       </span>
                       {typeof item.totalScore === "number" && (
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#1a2e5a] text-[#c9a227]">
-                          {item.totalScore}점
+                          {scoreLabel(item.totalScore)}
                         </span>
                       )}
                     </div>
