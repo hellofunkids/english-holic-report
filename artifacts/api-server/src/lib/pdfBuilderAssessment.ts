@@ -75,6 +75,13 @@ export function buildAssessmentReportPdf(
     doc.registerFont(F_REG, FONT_REGULAR);
     doc.registerFont(F_BOLD, FONT_BOLD);
     doc.font(F_REG);
+    // Disable pdfkit auto-pagination so absolutely-positioned text near the
+    // bottom never triggers a runaway extra page.
+    const killBottomMargin = () => {
+      doc.page.margins = { top: 0, bottom: 0, left: 0, right: 0 };
+    };
+    killBottomMargin();
+    doc.on("pageAdded", killBottomMargin);
 
     const chunks: Buffer[] = [];
     doc.on("data", (c: Buffer) => chunks.push(c));
@@ -381,7 +388,7 @@ function drawDomainScores(
 function drawSignature(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {
   const range = doc.bufferedPageRange();
   doc.switchToPage(range.start + range.count - 1);
-  const y = doc.page.height - 70;
+  const y = doc.page.height - 78;
   doc
     .strokeColor(GOLD)
     .lineWidth(1)
@@ -393,18 +400,29 @@ function drawSignature(doc: PDFKit.PDFDocument, meta: AssessmentMeta) {
     .font(F_REG)
     .fontSize(8)
     .text(
-      "본 평가서는 학생의 학업 성취도를 진단하고 학습 방향을 제안하기 위한 자료입니다. 추가 상담이 필요하시면 학원으로 연락 주시기 바랍니다.",
+      "본 평가서는 학생의 학업 성취도를 진단하고 학습 방향을 제안하기 위한 자료입니다.",
       40,
       y + 6,
-      { width: doc.page.width - 80, lineGap: 1 },
+      { width: doc.page.width - 80, lineGap: 1, lineBreak: false },
+    );
+  doc
+    .fillColor("#6b5a1f")
+    .font(F_REG)
+    .fontSize(8)
+    .text(
+      "추가 상담이 필요하시면 학원으로 연락 주시기 바랍니다.",
+      40,
+      y + 19,
+      { width: doc.page.width - 80, lineGap: 1, lineBreak: false },
     );
   doc
     .fillColor(NAVY)
     .font(F_BOLD)
     .fontSize(9)
-    .text(`${ACADEMY_NAME}  ·  담당 ${meta.teacherName}`, 40, y + 28, {
+    .text(`${ACADEMY_NAME}  ·  담당 ${meta.teacherName}`, 40, y + 38, {
       width: doc.page.width - 80,
       align: "right",
+      lineBreak: false,
     });
 }
 
@@ -417,10 +435,10 @@ function drawPageFooters(doc: PDFKit.PDFDocument) {
       .font(F_REG)
       .fontSize(9)
       .text(
-        `${ACADEMY_NAME}  |  학업 성취도 평가서  |  Page ${i - range.start + 1}`,
+        `${ACADEMY_NAME}  |  학업 성취도 평가서  |  Page ${i - range.start + 1} / ${range.count}`,
         40,
-        doc.page.height - 28,
-        { width: doc.page.width - 80, align: "center" },
+        doc.page.height - 22,
+        { width: doc.page.width - 80, align: "center", lineBreak: false },
       );
   }
 }
