@@ -1,9 +1,48 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
 import type { VocabEntry, VocabQuestion, ReadingQuestion } from "@workspace/db";
 
 const NAVY = "#1a2e5a";
 const GOLD = "#c9a227";
 const GREEN = "#1a6b3a";
+
+// Resolve fonts relative to this module so both dev (src/) and bundled (dist/) work
+const HERE =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
+
+// In dev:    artifacts/api-server/src/lib  -> ../assets/fonts
+// In build:  artifacts/api-server/dist     -> ./assets/fonts (copied by build.mjs)
+const FONT_DIR_CANDIDATES = [
+  path.resolve(HERE, "../assets/fonts"),
+  path.resolve(HERE, "./assets/fonts"),
+];
+
+function fontPath(file: string): string {
+  // Pick the first candidate that exists; pdfkit will throw clearly if missing
+  // We don't actually stat — pdfkit reads lazily; just return the first plausible path
+  // and fall back to the second if needed by trying both.
+  for (const dir of FONT_DIR_CANDIDATES) {
+    const p = path.join(dir, file);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require("node:fs") as typeof import("node:fs");
+      if (fs.existsSync(p)) return p;
+    } catch {
+      // ignore
+    }
+  }
+  return path.join(FONT_DIR_CANDIDATES[0], file);
+}
+
+const FONT_REGULAR = fontPath("NotoSansKR-Regular.ttf");
+const FONT_BOLD = fontPath("NotoSansKR-Bold.ttf");
+
+// Font aliases used throughout this file
+const F_REG = "Body";
+const F_BOLD = "Bold";
 
 const levelKo: Record<string, string> = {
   elementary4: "초등 4학년",
@@ -15,6 +54,11 @@ const levelKo: Record<string, string> = {
 function buildToBuffer(fn: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: "A4", bufferPages: true });
+    // Register Korean-capable fonts on every doc
+    doc.registerFont(F_REG, FONT_REGULAR);
+    doc.registerFont(F_BOLD, FONT_BOLD);
+    doc.font(F_REG);
+
     const chunks: Buffer[] = [];
     doc.on("data", (c: Buffer) => chunks.push(c));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -32,26 +76,26 @@ function drawHeader(
   level: string,
 ) {
   doc.rect(0, 0, doc.page.width, 90).fill(NAVY);
-  doc.fillColor("white").fontSize(22).font("Helvetica-Bold").text("Book Quiz Lab", 50, 18);
-  doc.fontSize(13).font("Helvetica").text(subtitle, 50, 46);
+  doc.fillColor("white").fontSize(22).font(F_BOLD).text("Book Quiz Lab", 50, 18);
+  doc.fontSize(13).font(F_REG).text(subtitle, 50, 46);
   doc
     .fontSize(10)
-    .text(`Level: ${levelKo[level] ?? level}`, doc.page.width - 160, 18, {
+    .text(`레벨: ${levelKo[level] ?? level}`, doc.page.width - 160, 18, {
       width: 110,
       align: "right",
     });
 
-  doc.fillColor(NAVY).fontSize(16).font("Helvetica-Bold").text(bookTitle, 50, 110);
-  doc.fillColor(GOLD).fontSize(12).font("Helvetica").text(chapterTitle, 50, 132);
+  doc.fillColor(NAVY).fontSize(16).font(F_BOLD).text(bookTitle, 50, 110);
+  doc.fillColor(GOLD).fontSize(12).font(F_REG).text(chapterTitle, 50, 132);
 }
 
 function drawStudentLine(doc: PDFKit.PDFDocument, total: number, y: number) {
   doc
     .fillColor("#333")
     .fontSize(11)
-    .font("Helvetica")
+    .font(F_REG)
     .text(
-      `Name: ________________________   Date: _______________   Score: ____ / ${total}`,
+      `이름: ________________________   날짜: _______________   점수: ____ / ${total}`,
       50,
       y,
     );
@@ -70,7 +114,7 @@ function drawFooter(doc: PDFKit.PDFDocument, label: string) {
     doc
       .fillColor("#aaa")
       .fontSize(9)
-      .font("Helvetica")
+      .font(F_REG)
       .text(`${label}  |  Page ${i - range.start + 1}`, 50, doc.page.height - 35, {
         width: doc.page.width - 100,
         align: "center",
@@ -86,14 +130,14 @@ export function buildVocabListPdf(
   level: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "Vocabulary List", bookTitle, chapterTitle, level);
+    drawHeader(doc, "단어장 (Vocabulary List)", bookTitle, chapterTitle, level);
     doc.moveTo(50, 156).lineTo(doc.page.width - 50, 156).strokeColor(GOLD).lineWidth(2).stroke();
 
     const cols = { num: 50, word: 80, meaning: 200, example: 320 };
     const colWidth = { word: 115, meaning: 115, example: doc.page.width - 50 - 320 };
 
     const drawTableHeader = (startY: number): number => {
-      doc.fillColor(NAVY).fontSize(11).font("Helvetica-Bold");
+      doc.fillColor(NAVY).fontSize(11).font(F_BOLD);
       doc.text("#", cols.num, startY);
       doc.text("Word", cols.word, startY);
       doc.text("뜻", cols.meaning, startY);
@@ -105,7 +149,7 @@ export function buildVocabListPdf(
         .strokeColor("#ddd")
         .lineWidth(1)
         .stroke();
-      doc.font("Helvetica").fillColor("#222").fontSize(10);
+      doc.font(F_REG).fillColor("#222").fontSize(10);
       return next;
     };
 
@@ -122,11 +166,11 @@ export function buildVocabListPdf(
         y = drawTableHeader(50);
       }
 
-      doc.fillColor("#666").text(String(i + 1), cols.num, y, { width: 22 });
-      doc.fillColor(NAVY).font("Helvetica-Bold").text(v.word, cols.word, y, { width: colWidth.word });
-      doc.fillColor("#222").font("Helvetica").text(v.meaning, cols.meaning, y, { width: colWidth.meaning });
-      doc.fillColor("#555").font("Helvetica-Oblique").fontSize(9.5).text(v.example, cols.example, y, { width: colWidth.example });
-      doc.font("Helvetica").fontSize(10);
+      doc.fillColor("#666").font(F_REG).text(String(i + 1), cols.num, y, { width: 22 });
+      doc.fillColor(NAVY).font(F_BOLD).text(v.word, cols.word, y, { width: colWidth.word });
+      doc.fillColor("#222").font(F_REG).text(v.meaning, cols.meaning, y, { width: colWidth.meaning });
+      doc.fillColor("#555").font(F_REG).fontSize(9.5).text(v.example, cols.example, y, { width: colWidth.example });
+      doc.font(F_REG).fontSize(10);
 
       y += rowH;
       doc.moveTo(50, y - 4).lineTo(doc.page.width - 50, y - 4).strokeColor("#eee").lineWidth(0.5).stroke();
@@ -138,10 +182,10 @@ export function buildVocabListPdf(
 
 // ── 2. Vocabulary Quiz PDF ────────────────────────────────────────────────
 const vocabTypeLabel: Record<VocabQuestion["type"], string> = {
-  fill_blank: "Fill in the blank",
-  match_meaning: "Choose the meaning",
-  choose_word: "Choose the correct word",
-  translation: "Translate",
+  fill_blank: "빈칸 채우기",
+  match_meaning: "뜻 고르기",
+  choose_word: "단어 고르기",
+  translation: "영작",
 };
 
 export function buildVocabQuizPdf(
@@ -151,20 +195,20 @@ export function buildVocabQuizPdf(
   level: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "Vocabulary Quiz", bookTitle, chapterTitle, level);
+    drawHeader(doc, "어휘 퀴즈 (Vocabulary Quiz)", bookTitle, chapterTitle, level);
     drawStudentLine(doc, questions.length, 158);
 
     let y = 200;
     const pageW = doc.page.width - 100;
     for (const q of questions) {
       const qText = `${q.number}. [${vocabTypeLabel[q.type]}] ${q.question}`;
-      const qH = doc.fillColor(NAVY).fontSize(11).font("Helvetica-Bold").heightOfString(qText, { width: pageW });
+      const qH = doc.fillColor(NAVY).fontSize(11).font(F_BOLD).heightOfString(qText, { width: pageW });
       if (y + qH > doc.page.height - 80) { doc.addPage(); y = 50; }
       doc.text(qText, 50, y, { width: pageW });
       y += qH + 6;
 
       if (q.options && q.options.length > 0) {
-        doc.fontSize(10.5).font("Helvetica").fillColor("#222");
+        doc.fontSize(10.5).font(F_REG).fillColor("#222");
         for (let i = 0; i < q.options.length; i++) {
           const label = String.fromCharCode(65 + i);
           const optText = `${label}) ${q.options[i]}`;
@@ -174,9 +218,8 @@ export function buildVocabQuizPdf(
           y += optH + 3;
         }
       } else {
-        // Answer line
-        doc.fontSize(10.5).font("Helvetica").fillColor("#888");
-        doc.text("Answer: ______________________________", 68, y + 4);
+        doc.fontSize(10.5).font(F_REG).fillColor("#888");
+        doc.text("정답: ______________________________", 68, y + 4);
         y += 22;
       }
       y += 12;
@@ -194,19 +237,19 @@ export function buildReadingQuizPdf(
   level: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "Reading Comprehension Quiz", bookTitle, chapterTitle, level);
+    drawHeader(doc, "독해 퀴즈 (Reading Comprehension)", bookTitle, chapterTitle, level);
     drawStudentLine(doc, questions.length, 158);
 
     let y = 200;
     const pageW = doc.page.width - 100;
     for (const q of questions) {
       const qText = `${q.number}. ${q.question}`;
-      const qH = doc.fillColor(NAVY).fontSize(11).font("Helvetica-Bold").heightOfString(qText, { width: pageW });
+      const qH = doc.fillColor(NAVY).fontSize(11).font(F_BOLD).heightOfString(qText, { width: pageW });
       if (y + qH > doc.page.height - 100) { doc.addPage(); y = 50; }
       doc.text(qText, 50, y, { width: pageW });
       y += qH + 6;
 
-      doc.fontSize(10.5).font("Helvetica").fillColor("#222");
+      doc.fontSize(10.5).font(F_REG).fillColor("#222");
       for (const opt of q.options) {
         const optH = doc.heightOfString(opt, { width: pageW - 20 });
         if (y + optH > doc.page.height - 60) { doc.addPage(); y = 50; }
@@ -229,25 +272,23 @@ export function buildAnswerKeyPdf(
   level: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "Answer Key", bookTitle, chapterTitle, level);
+    drawHeader(doc, "정답지 (Answer Key)", bookTitle, chapterTitle, level);
     doc.moveTo(50, 156).lineTo(doc.page.width - 50, 156).strokeColor(GOLD).lineWidth(2).stroke();
 
     let y = 172;
     const pageW = doc.page.width - 100;
 
-    // Section 1: Vocabulary Quiz answers
-    doc.fillColor(NAVY).fontSize(14).font("Helvetica-Bold").text("Vocabulary Quiz", 50, y);
+    doc.fillColor(NAVY).fontSize(14).font(F_BOLD).text("어휘 퀴즈 정답", 50, y);
     y += 22;
 
-    doc.fontSize(10).font("Helvetica");
+    doc.fontSize(10).font(F_REG);
     for (const q of vocabQuestions) {
-      const line = `${q.number}. ${q.answer}`;
-      const text = `${line}    (${vocabTypeLabel[q.type]})`;
+      const text = `${q.number}. ${q.answer}    (${vocabTypeLabel[q.type]})`;
       const h = doc.heightOfString(text, { width: pageW });
       if (y + h > doc.page.height - 80) { doc.addPage(); y = 50; }
-      doc.fillColor("#333").text(`${q.number}.`, 50, y, { width: 28 });
-      doc.fillColor(GREEN).font("Helvetica-Bold").text(q.answer, 78, y, { width: pageW - 28 });
-      doc.font("Helvetica").fillColor("#333");
+      doc.fillColor("#333").font(F_REG).text(`${q.number}.`, 50, y, { width: 28 });
+      doc.fillColor(GREEN).font(F_BOLD).text(q.answer, 78, y, { width: pageW - 28 });
+      doc.font(F_REG).fillColor("#333");
       y += Math.max(h, 14) + 2;
     }
 
@@ -255,36 +296,34 @@ export function buildAnswerKeyPdf(
     doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor("#ddd").lineWidth(1).stroke();
     y += 14;
 
-    // Section 2: Reading Quiz answers — grid
     if (y > doc.page.height - 120) { doc.addPage(); y = 50; }
-    doc.fillColor(NAVY).fontSize(14).font("Helvetica-Bold").text("Reading Comprehension", 50, y);
+    doc.fillColor(NAVY).fontSize(14).font(F_BOLD).text("독해 퀴즈 정답", 50, y);
     y += 22;
 
     const col1X = 50;
     const col2X = 320;
     const mid = Math.ceil(readingQuestions.length / 2);
-    const startY = y;
     let leftY = y;
     let rightY = y;
 
-    doc.fontSize(10.5).font("Helvetica");
+    doc.fontSize(10.5).font(F_REG);
     for (let i = 0; i < mid; i++) {
       const q1 = readingQuestions[i];
       const q2 = readingQuestions[i + mid];
 
       if (leftY > doc.page.height - 60) { doc.addPage(); leftY = 50; rightY = 50; }
 
-      doc.fillColor("#333").font("Helvetica").text(`${q1.number}.`, col1X, leftY, { width: 28 });
-      doc.fillColor(GREEN).font("Helvetica-Bold").text(q1.answer, col1X + 28, leftY, { width: 30 });
+      doc.fillColor("#333").font(F_REG).text(`${q1.number}.`, col1X, leftY, { width: 28 });
+      doc.fillColor(GREEN).font(F_BOLD).text(q1.answer, col1X + 28, leftY, { width: 30 });
       const opt1 = q1.options.find((o) => o.startsWith(q1.answer + ")"))?.replace(/^[ABCD]\)\s*/, "") ?? "";
-      doc.fillColor("#666").font("Helvetica").fontSize(9.5).text(opt1, col1X + 60, leftY, { width: 200 });
+      doc.fillColor("#666").font(F_REG).fontSize(9.5).text(opt1, col1X + 60, leftY, { width: 200 });
       doc.fontSize(10.5);
 
       if (q2) {
-        doc.fillColor("#333").font("Helvetica").text(`${q2.number}.`, col2X, rightY, { width: 28 });
-        doc.fillColor(GREEN).font("Helvetica-Bold").text(q2.answer, col2X + 28, rightY, { width: 30 });
+        doc.fillColor("#333").font(F_REG).text(`${q2.number}.`, col2X, rightY, { width: 28 });
+        doc.fillColor(GREEN).font(F_BOLD).text(q2.answer, col2X + 28, rightY, { width: 30 });
         const opt2 = q2.options.find((o) => o.startsWith(q2.answer + ")"))?.replace(/^[ABCD]\)\s*/, "") ?? "";
-        doc.fillColor("#666").font("Helvetica").fontSize(9.5).text(opt2, col2X + 60, rightY, { width: 200 });
+        doc.fillColor("#666").font(F_REG).fontSize(9.5).text(opt2, col2X + 60, rightY, { width: 200 });
         doc.fontSize(10.5);
       }
 
@@ -292,7 +331,6 @@ export function buildAnswerKeyPdf(
       rightY += 22;
     }
 
-    void startY;
     drawFooter(doc, `Book Quiz Lab  |  ${bookTitle}  |  Answer Key`);
   });
 }
