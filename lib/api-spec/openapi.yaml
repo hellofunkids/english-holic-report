@@ -254,6 +254,8 @@ components:
           type: string
         level:
           type: string
+        author:
+          type: string
         vocabCount:
           type: integer
         vocabQuizCount:
@@ -273,6 +275,8 @@ components:
         level:
           type: string
           enum: [elementary4, elementary5, elementary6, middle]
+        author:
+          type: string
 
     GenerateResult:
       type: object

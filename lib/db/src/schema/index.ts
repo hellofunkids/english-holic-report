@@ -45,6 +45,7 @@ export const materialsTable = pgTable("materials", {
   bookTitle: text("book_title").notNull(),
   chapterTitle: text("chapter_title").notNull(),
   level: text("level").notNull().default("elementary4"),
+  author: text("author"),
   vocabulary: jsonb("vocabulary").$type<VocabEntry[]>().notNull(),
   vocabQuestions: jsonb("vocab_questions").$type<VocabQuestion[]>().notNull(),
   readingQuestions: jsonb("reading_questions").$type<ReadingQuestion[]>().notNull(),

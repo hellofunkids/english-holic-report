@@ -58,6 +58,9 @@ const LEVEL_LABELS: Record<string, string> = {
   middle: "중등",
 };
 
+const AUTHORS = ["이현진 원장", "이진미 강사", "강나영 강사"] as const;
+const DEFAULT_AUTHOR = AUTHORS[0];
+
 export default function Home() {
   const { data: books = [] } = useListBooks();
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
@@ -79,8 +82,8 @@ export default function Home() {
               <BookOpen className="w-5 h-5 text-[#1a2e5a]" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-none">Book Quiz Lab</h1>
-              <p className="text-xs text-white/70 mt-0.5">AI 시험지 자동 생성</p>
+              <h1 className="font-bold text-lg leading-none">헬로펀키즈 주니어 어학원</h1>
+              <p className="text-xs text-white/70 mt-0.5">Book Quiz Lab · AI 시험지 자동 생성</p>
             </div>
           </div>
         </div>
@@ -429,6 +432,7 @@ function GenerateDialog({
 }) {
   const [chapterTitle, setChapterTitle] = useState("");
   const [level, setLevel] = useState<GenerateInputLevel>("elementary4");
+  const [author, setAuthor] = useState<string>(DEFAULT_AUTHOR);
   const qc = useQueryClient();
   const { toast } = useToast();
   const generate = useGenerateMaterials();
@@ -436,7 +440,7 @@ function GenerateDialog({
   const handleGenerate = () => {
     if (!chapterTitle.trim()) return;
     generate.mutate(
-      { bookId: book.id, data: { chapterTitle: chapterTitle.trim(), level } },
+      { bookId: book.id, data: { chapterTitle: chapterTitle.trim(), level, author } },
       {
         onSuccess: (result) => {
           qc.invalidateQueries({ queryKey: getListMaterialsQueryKey(book.id) });
@@ -507,6 +511,21 @@ function GenerateDialog({
                     {Object.entries(LEVEL_LABELS).map(([k, v]) => (
                       <SelectItem key={k} value={k}>
                         {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>담당 선생님</Label>
+                <Select value={author} onValueChange={setAuthor}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AUTHORS.map((a) => (
+                      <SelectItem key={a} value={a}>
+                        {a}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -639,6 +658,11 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
             <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a2e5a]/10 text-[#1a2e5a] font-medium">
               {LEVEL_LABELS[material.level] ?? material.level}
             </span>
+            {material.author ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#7a6014] font-medium">
+                {material.author}
+              </span>
+            ) : null}
           </div>
           <p className="text-xs text-slate-500 mt-1">{dateStr} 생성</p>
         </div>

@@ -30,6 +30,7 @@ router.get("/books/:bookId/materials", async (req: Request, res: Response) => {
       bookTitle: m.bookTitle,
       chapterTitle: m.chapterTitle,
       level: m.level,
+      author: m.author ?? undefined,
       vocabCount: m.vocabulary.length,
       vocabQuizCount: m.vocabQuestions.length,
       readingQuizCount: m.readingQuestions.length,
@@ -64,11 +65,12 @@ router.post("/materials/:materialId/pdf", async (req: Request, res: Response) =>
 
   let vocabList: Buffer, vocabQuiz: Buffer, readingQuiz: Buffer, answerKey: Buffer;
   try {
+    const author = m.author ?? undefined;
     [vocabList, vocabQuiz, readingQuiz, answerKey] = await Promise.all([
-      buildVocabListPdf(m.vocabulary, m.bookTitle, m.chapterTitle, m.level),
-      buildVocabQuizPdf(m.vocabQuestions, m.bookTitle, m.chapterTitle, m.level),
-      buildReadingQuizPdf(m.readingQuestions, m.bookTitle, m.chapterTitle, m.level),
-      buildAnswerKeyPdf(m.vocabQuestions, m.readingQuestions, m.bookTitle, m.chapterTitle, m.level),
+      buildVocabListPdf(m.vocabulary, m.bookTitle, m.chapterTitle, m.level, author),
+      buildVocabQuizPdf(m.vocabQuestions, m.bookTitle, m.chapterTitle, m.level, author),
+      buildReadingQuizPdf(m.readingQuestions, m.bookTitle, m.chapterTitle, m.level, author),
+      buildAnswerKeyPdf(m.vocabQuestions, m.readingQuestions, m.bookTitle, m.chapterTitle, m.level, author),
     ]);
   } catch (err) {
     req.log.error({ err, materialId: id }, "PDF regeneration failed");

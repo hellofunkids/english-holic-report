@@ -137,6 +137,10 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
   }
   const chapterTitle: string = req.body?.chapterTitle ?? "";
   const level: string = req.body?.level ?? "elementary4";
+  const author: string | undefined =
+    typeof req.body?.author === "string" && req.body.author.trim()
+      ? req.body.author.trim()
+      : undefined;
   if (!chapterTitle) {
     res.status(400).json({ error: "chapterTitle is required" });
     return;
@@ -162,10 +166,10 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
   let vocabList: Buffer, vocabQuiz: Buffer, readingQuiz: Buffer, answerKey: Buffer;
   try {
     [vocabList, vocabQuiz, readingQuiz, answerKey] = await Promise.all([
-      buildVocabListPdf(ai.vocabulary, book.title, chapterTitle, level),
-      buildVocabQuizPdf(ai.vocabQuestions, book.title, chapterTitle, level),
-      buildReadingQuizPdf(ai.readingQuestions, book.title, chapterTitle, level),
-      buildAnswerKeyPdf(ai.vocabQuestions, ai.readingQuestions, book.title, chapterTitle, level),
+      buildVocabListPdf(ai.vocabulary, book.title, chapterTitle, level, author),
+      buildVocabQuizPdf(ai.vocabQuestions, book.title, chapterTitle, level, author),
+      buildReadingQuizPdf(ai.readingQuestions, book.title, chapterTitle, level, author),
+      buildAnswerKeyPdf(ai.vocabQuestions, ai.readingQuestions, book.title, chapterTitle, level, author),
     ]);
   } catch (err) {
     req.log.error({ err, bookId, chapterTitle }, "PDF generation failed");
@@ -181,6 +185,7 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
       bookTitle: book.title,
       chapterTitle,
       level,
+      author,
       vocabulary: ai.vocabulary,
       vocabQuestions: ai.vocabQuestions,
       readingQuestions: ai.readingQuestions,

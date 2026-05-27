@@ -12,6 +12,7 @@ export interface MaterialSummary {
   bookTitle: string;
   chapterTitle: string;
   level: string;
+  author?: string;
   vocabCount: number;
   vocabQuizCount: number;
   readingQuizCount: number;

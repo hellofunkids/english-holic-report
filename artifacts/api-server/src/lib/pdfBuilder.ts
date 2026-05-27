@@ -7,6 +7,8 @@ const NAVY = "#1a2e5a";
 const GOLD = "#c9a227";
 const GREEN = "#1a6b3a";
 
+const ACADEMY_NAME = "헬로펀키즈 주니어 어학원";
+
 // Resolve fonts relative to this module so both dev (src/) and bundled (dist/) work
 const HERE =
   typeof __dirname !== "undefined"
@@ -74,19 +76,42 @@ function drawHeader(
   bookTitle: string,
   chapterTitle: string,
   level: string,
+  author?: string,
 ) {
   doc.rect(0, 0, doc.page.width, 90).fill(NAVY);
-  doc.fillColor("white").fontSize(22).font(F_BOLD).text("Book Quiz Lab", 50, 18);
-  doc.fontSize(13).font(F_REG).text(subtitle, 50, 46);
+  doc.fillColor("white").fontSize(18).font(F_BOLD).text(ACADEMY_NAME, 50, 16);
+  doc.fontSize(12).font(F_REG).fillColor("#c9d4f0").text(subtitle, 50, 42);
+
+  // Right column: level on top, author below
   doc
+    .fillColor("white")
     .fontSize(10)
-    .text(`레벨: ${levelKo[level] ?? level}`, doc.page.width - 160, 18, {
-      width: 110,
+    .font(F_REG)
+    .text(`레벨: ${levelKo[level] ?? level}`, doc.page.width - 200, 18, {
+      width: 150,
+      align: "right",
+    });
+  if (author) {
+    doc
+      .fillColor(GOLD)
+      .fontSize(10)
+      .font(F_BOLD)
+      .text(`담당: ${author}`, doc.page.width - 200, 34, {
+        width: 150,
+        align: "right",
+      });
+  }
+  doc
+    .fillColor("#c9d4f0")
+    .fontSize(9)
+    .font(F_REG)
+    .text(new Date().toLocaleDateString("ko-KR"), doc.page.width - 200, 50, {
+      width: 150,
       align: "right",
     });
 
-  doc.fillColor(NAVY).fontSize(16).font(F_BOLD).text(bookTitle, 50, 110);
-  doc.fillColor(GOLD).fontSize(12).font(F_REG).text(chapterTitle, 50, 132);
+  doc.fillColor(NAVY).fontSize(16).font(F_BOLD).text(bookTitle, 50, 102);
+  doc.fillColor(GOLD).fontSize(12).font(F_REG).text(chapterTitle, 50, 124);
 }
 
 function drawStudentLine(doc: PDFKit.PDFDocument, total: number, y: number) {
@@ -115,7 +140,7 @@ function drawFooter(doc: PDFKit.PDFDocument, label: string) {
       .fillColor("#aaa")
       .fontSize(9)
       .font(F_REG)
-      .text(`${label}  |  Page ${i - range.start + 1}`, 50, doc.page.height - 35, {
+      .text(`${ACADEMY_NAME}  |  ${label}  |  Page ${i - range.start + 1}`, 50, doc.page.height - 35, {
         width: doc.page.width - 100,
         align: "center",
       });
@@ -128,10 +153,11 @@ export function buildVocabListPdf(
   bookTitle: string,
   chapterTitle: string,
   level: string,
+  author?: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "단어장 (Vocabulary List)", bookTitle, chapterTitle, level);
-    doc.moveTo(50, 156).lineTo(doc.page.width - 50, 156).strokeColor(GOLD).lineWidth(2).stroke();
+    drawHeader(doc, "단어장 (Vocabulary List)", bookTitle, chapterTitle, level, author);
+    doc.moveTo(50, 150).lineTo(doc.page.width - 50, 150).strokeColor(GOLD).lineWidth(2).stroke();
 
     const cols = { num: 50, word: 80, meaning: 220, example: 340 };
     const colWidth = { word: 135, meaning: 115, example: doc.page.width - 50 - 340 };
@@ -153,7 +179,7 @@ export function buildVocabListPdf(
       return next;
     };
 
-    let y = drawTableHeader(174);
+    let y = drawTableHeader(168);
 
     vocab.forEach((v, i) => {
       const pronText = v.pronunciation ? `[${v.pronunciation}]` : "";
@@ -200,10 +226,11 @@ export function buildVocabQuizPdf(
   bookTitle: string,
   chapterTitle: string,
   level: string,
+  author?: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "어휘 퀴즈 (Vocabulary Quiz)", bookTitle, chapterTitle, level);
-    drawStudentLine(doc, questions.length, 158);
+    drawHeader(doc, "어휘 퀴즈 (Vocabulary Quiz)", bookTitle, chapterTitle, level, author);
+    drawStudentLine(doc, questions.length, 152);
 
     let y = 200;
     const pageW = doc.page.width - 100;
@@ -242,10 +269,11 @@ export function buildReadingQuizPdf(
   bookTitle: string,
   chapterTitle: string,
   level: string,
+  author?: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "독해 퀴즈 (Reading Comprehension)", bookTitle, chapterTitle, level);
-    drawStudentLine(doc, questions.length, 158);
+    drawHeader(doc, "독해 퀴즈 (Reading Comprehension)", bookTitle, chapterTitle, level, author);
+    drawStudentLine(doc, questions.length, 152);
 
     let y = 200;
     const pageW = doc.page.width - 100;
@@ -277,12 +305,13 @@ export function buildAnswerKeyPdf(
   bookTitle: string,
   chapterTitle: string,
   level: string,
+  author?: string,
 ): Promise<Buffer> {
   return buildToBuffer((doc) => {
-    drawHeader(doc, "정답지 (Answer Key)", bookTitle, chapterTitle, level);
-    doc.moveTo(50, 156).lineTo(doc.page.width - 50, 156).strokeColor(GOLD).lineWidth(2).stroke();
+    drawHeader(doc, "정답지 (Answer Key)", bookTitle, chapterTitle, level, author);
+    doc.moveTo(50, 150).lineTo(doc.page.width - 50, 150).strokeColor(GOLD).lineWidth(2).stroke();
 
-    let y = 172;
+    let y = 166;
     const pageW = doc.page.width - 100;
 
     doc.fillColor(NAVY).fontSize(14).font(F_BOLD).text("어휘 퀴즈 정답", 50, y);

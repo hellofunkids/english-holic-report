@@ -10,4 +10,5 @@ import type { GenerateInputLevel } from './generateInputLevel';
 export interface GenerateInput {
   chapterTitle: string;
   level: GenerateInputLevel;
+  author?: string;
 }

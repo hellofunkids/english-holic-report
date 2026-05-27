@@ -35,6 +35,7 @@ export interface MaterialSummary {
   bookTitle: string;
   chapterTitle: string;
   level: string;
+  author?: string;
   vocabCount: number;
   vocabQuizCount: number;
   readingQuizCount: number;
@@ -54,6 +55,7 @@ export const GenerateInputLevel = {
 export interface GenerateInput {
   chapterTitle: string;
   level: GenerateInputLevel;
+  author?: string;
 }
 
 export interface GenerateResult {

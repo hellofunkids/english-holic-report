@@ -82,6 +82,7 @@ export const ListMaterialsResponseItem = zod.object({
   "bookTitle": zod.string(),
   "chapterTitle": zod.string(),
   "level": zod.string(),
+  "author": zod.string().optional(),
   "vocabCount": zod.number(),
   "vocabQuizCount": zod.number(),
   "readingQuizCount": zod.number(),
@@ -99,7 +100,8 @@ export const GenerateMaterialsParams = zod.object({
 
 export const GenerateMaterialsBody = zod.object({
   "chapterTitle": zod.string(),
-  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle'])
+  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']),
+  "author": zod.string().optional()
 })
 
 
