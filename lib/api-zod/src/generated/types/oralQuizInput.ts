@@ -5,10 +5,9 @@
  * Book Quiz Lab — AI Material Generator
  * OpenAPI spec version: 0.2.0
  */
+import type { OralQuizInputLevel } from './oralQuizInputLevel';
 
-export interface PdfBundle {
-  vocabListPdfBase64: string;
-  vocabQuizPdfBase64: string;
-  readingQuizPdfBase64: string;
-  answerKeyPdfBase64: string;
+export interface OralQuizInput {
+  level: OralQuizInputLevel;
+  author?: string;
 }

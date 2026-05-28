@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import booksRouter from "./books";
 import materialsRouter from "./materials";
 import generateRouter from "./generate";
+import oralQuizRouter from "./oralQuiz";
 import storageRouter from "./storage";
 import assessmentsRouter from "./assessments";
 
@@ -12,6 +13,7 @@ router.use(healthRouter);
 router.use(booksRouter);
 router.use(materialsRouter);
 router.use(generateRouter);
+router.use(oralQuizRouter);
 router.use(storageRouter);
 router.use(assessmentsRouter);
 

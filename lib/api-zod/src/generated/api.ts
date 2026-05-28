@@ -86,7 +86,6 @@ export const ListMaterialsResponseItem = zod.object({
   "vocabCount": zod.number(),
   "vocabQuizCount": zod.number(),
   "readingQuizCount": zod.number(),
-  "oralQuizCount": zod.number(),
   "createdAt": zod.coerce.date()
 })
 export const ListMaterialsResponse = zod.array(ListMaterialsResponseItem)
@@ -103,6 +102,24 @@ export const GenerateMaterialsBody = zod.object({
   "chapterTitle": zod.string(),
   "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']),
   "author": zod.string().optional()
+})
+
+
+/**
+ * @summary Generate 10 oral comprehension questions about the whole book
+ */
+export const GenerateOralQuizParams = zod.object({
+  "bookId": zod.coerce.number()
+})
+
+export const GenerateOralQuizBody = zod.object({
+  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']),
+  "author": zod.string().optional()
+})
+
+export const GenerateOralQuizResponse = zod.object({
+  "pdfBase64": zod.string(),
+  "questionCount": zod.number()
 })
 
 
@@ -125,8 +142,7 @@ export const DownloadMaterialPdfResponse = zod.object({
   "vocabListPdfBase64": zod.string(),
   "vocabQuizPdfBase64": zod.string(),
   "readingQuizPdfBase64": zod.string(),
-  "answerKeyPdfBase64": zod.string(),
-  "oralQuizPdfBase64": zod.string().optional()
+  "answerKeyPdfBase64": zod.string()
 })
 
 

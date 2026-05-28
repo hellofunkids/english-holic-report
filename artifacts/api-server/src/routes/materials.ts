@@ -6,7 +6,6 @@ import {
   buildVocabQuizPdf,
   buildReadingQuizPdf,
   buildAnswerKeyPdf,
-  buildOralQuizPdf,
 } from "../lib/pdfBuilder";
 
 const router: IRouter = Router();
@@ -35,7 +34,6 @@ router.get("/books/:bookId/materials", async (req: Request, res: Response) => {
       vocabCount: m.vocabulary.length,
       vocabQuizCount: m.vocabQuestions.length,
       readingQuizCount: m.readingQuestions.length,
-      oralQuizCount: m.oralQuestions?.length ?? 0,
       createdAt: m.createdAt,
     })),
   );
@@ -65,11 +63,7 @@ router.post("/materials/:materialId/pdf", async (req: Request, res: Response) =>
     return;
   }
 
-  let vocabList: Buffer,
-    vocabQuiz: Buffer,
-    readingQuiz: Buffer,
-    answerKey: Buffer,
-    oralQuiz: Buffer | null = null;
+  let vocabList: Buffer, vocabQuiz: Buffer, readingQuiz: Buffer, answerKey: Buffer;
   try {
     const author = m.author ?? undefined;
     [vocabList, vocabQuiz, readingQuiz, answerKey] = await Promise.all([
@@ -78,10 +72,6 @@ router.post("/materials/:materialId/pdf", async (req: Request, res: Response) =>
       buildReadingQuizPdf(m.readingQuestions, m.bookTitle, m.chapterTitle, m.level, author),
       buildAnswerKeyPdf(m.vocabQuestions, m.readingQuestions, m.bookTitle, m.chapterTitle, m.level, author),
     ]);
-    // Old materials may not have oralQuestions — skip in that case
-    if (m.oralQuestions && m.oralQuestions.length > 0) {
-      oralQuiz = await buildOralQuizPdf(m.oralQuestions, m.bookTitle, m.chapterTitle, m.level, author);
-    }
   } catch (err) {
     req.log.error({ err, materialId: id }, "PDF regeneration failed");
     res.status(500).json({ error: "PDF 생성 실패" });
@@ -93,7 +83,6 @@ router.post("/materials/:materialId/pdf", async (req: Request, res: Response) =>
     vocabQuizPdfBase64: vocabQuiz.toString("base64"),
     readingQuizPdfBase64: readingQuiz.toString("base64"),
     answerKeyPdfBase64: answerKey.toString("base64"),
-    ...(oralQuiz ? { oralQuizPdfBase64: oralQuiz.toString("base64") } : {}),
   });
 });
 

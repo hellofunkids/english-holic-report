@@ -39,7 +39,6 @@ export interface MaterialSummary {
   vocabCount: number;
   vocabQuizCount: number;
   readingQuizCount: number;
-  oralQuizCount: number;
   createdAt: string;
 }
 
@@ -65,7 +64,6 @@ export interface GenerateResult {
   vocabQuizPdfBase64: string;
   readingQuizPdfBase64: string;
   answerKeyPdfBase64: string;
-  oralQuizPdfBase64: string;
 }
 
 export interface PdfBundle {
@@ -73,7 +71,26 @@ export interface PdfBundle {
   vocabQuizPdfBase64: string;
   readingQuizPdfBase64: string;
   answerKeyPdfBase64: string;
-  oralQuizPdfBase64?: string;
+}
+
+export type OralQuizInputLevel = typeof OralQuizInputLevel[keyof typeof OralQuizInputLevel];
+
+
+export const OralQuizInputLevel = {
+  elementary4: 'elementary4',
+  elementary5: 'elementary5',
+  elementary6: 'elementary6',
+  middle: 'middle',
+} as const;
+
+export interface OralQuizInput {
+  level: OralQuizInputLevel;
+  author?: string;
+}
+
+export interface OralQuizResult {
+  pdfBase64: string;
+  questionCount: number;
 }
 
 export interface UploadRequestBody {

@@ -27,6 +27,8 @@ import type {
   GenerateResult,
   HealthStatus,
   MaterialSummary,
+  OralQuizInput,
+  OralQuizResult,
   PdfBundle,
   UploadRequestBody,
   UploadResponseData
@@ -558,6 +560,78 @@ export const useGenerateMaterials = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGenerateMaterialsMutationOptions(options));
+    }
+
+export const getGenerateOralQuizUrl = (bookId: number,) => {
+
+
+
+
+  return `/api/books/${bookId}/oral-quiz`
+}
+
+/**
+ * @summary Generate 10 oral comprehension questions about the whole book
+ */
+export const generateOralQuiz = async (bookId: number,
+    oralQuizInput: OralQuizInput, options?: RequestInit): Promise<OralQuizResult> => {
+
+  return customFetch<OralQuizResult>(getGenerateOralQuizUrl(bookId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      oralQuizInput,)
+  }
+);}
+
+
+
+
+export const getGenerateOralQuizMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateOralQuiz>>, TError,{bookId: number;data: BodyType<OralQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateOralQuiz>>, TError,{bookId: number;data: BodyType<OralQuizInput>}, TContext> => {
+
+const mutationKey = ['generateOralQuiz'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateOralQuiz>>, {bookId: number;data: BodyType<OralQuizInput>}> = (props) => {
+          const {bookId,data} = props ?? {};
+
+          return  generateOralQuiz(bookId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateOralQuizMutationResult = NonNullable<Awaited<ReturnType<typeof generateOralQuiz>>>
+    export type GenerateOralQuizMutationBody = BodyType<OralQuizInput>
+    export type GenerateOralQuizMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate 10 oral comprehension questions about the whole book
+ */
+export const useGenerateOralQuiz = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateOralQuiz>>, TError,{bookId: number;data: BodyType<OralQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateOralQuiz>>,
+        TError,
+        {bookId: number;data: BodyType<OralQuizInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateOralQuizMutationOptions(options));
     }
 
 export const getDeleteMaterialUrl = (materialId: number,) => {

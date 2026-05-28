@@ -12,7 +12,6 @@ import {
   buildVocabQuizPdf,
   buildReadingQuizPdf,
   buildAnswerKeyPdf,
-  buildOralQuizPdf,
 } from "../lib/pdfBuilder";
 
 // ── Strict AI response schemas ────────────────────────────────────────────
@@ -38,17 +37,10 @@ const ReadingQuestionSchema = z.object({
   answer: z.enum(["A", "B", "C", "D"]),
 });
 
-const OralQuestionSchema = z.object({
-  number: z.number().int().positive(),
-  question: z.string().min(1),
-  answer: z.string().min(1),
-});
-
 const AiResponseSchema = z.object({
   vocabulary: z.array(VocabEntrySchema).min(5),
   vocabQuestions: z.array(VocabQuestionSchema).min(5),
   readingQuestions: z.array(ReadingQuestionSchema).min(5),
-  oralQuestions: z.array(OralQuestionSchema).min(5),
 });
 
 type AiResponse = z.infer<typeof AiResponseSchema>;
@@ -79,7 +71,7 @@ async function generateAll(
 Book: "${bookTitle}"
 Chapter/Section: "${chapterTitle}"
 
-Generate four things in a SINGLE JSON response:
+Generate three things in a SINGLE JSON response:
 
 1. VOCABULARY LIST — exactly 20 important vocabulary words from this chapter of the book.
    - Choose words that are actually used in the book and appropriate for the level
@@ -103,13 +95,6 @@ Generate four things in a SINGLE JSON response:
    - Cover different parts of the book, no repeated ideas
    - Keep question and options short and clear at the ${levelLabel} level
 
-4. ORAL COMPREHENSION QUIZ — exactly 10 open-ended SPEAKING questions for the teacher to ask the student orally.
-   - These are NOT multiple choice. They are short comprehension questions in English that the teacher will ask the student verbally.
-   - Cover plot, characters, setting, sequence of events, character feelings/motivations, cause-and-effect, predictions, opinions.
-   - Difficulty appropriate for ${levelLabel}. Start with easier recall questions (1-4), then deeper inference/opinion (5-10).
-   - Each question must have a clear, complete MODEL ANSWER in English (1-2 short sentences, 8-25 words) that a student of this level could realistically produce. The model answer is for the teacher's reference / scoring guide.
-   - Number them 1 to 10.
-
 Return ONLY this JSON structure, no other text:
 {
   "vocabulary": [
@@ -123,16 +108,12 @@ Return ONLY this JSON structure, no other text:
   ],
   "readingQuestions": [
     { "number": 1, "question": "Where does the story begin?", "options": ["A) On a farm", "B) In a city", "C) At school", "D) In a forest"], "answer": "A" }
-  ],
-  "oralQuestions": [
-    { "number": 1, "question": "Who is the main character in the story?", "answer": "The main character is a brave boy named Tom who lives on a farm." },
-    { "number": 2, "question": "Why did Tom decide to help his friend?", "answer": "Because his friend was in trouble and Tom is very kind and brave." }
   ]
 }`;
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 10000,
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   });
 
@@ -181,19 +162,14 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
     return;
   }
 
-  // Build all 5 PDFs FIRST (atomicity: don't archive a material if PDFs can't render)
-  let vocabList: Buffer,
-    vocabQuiz: Buffer,
-    readingQuiz: Buffer,
-    answerKey: Buffer,
-    oralQuiz: Buffer;
+  // Build all 4 PDFs FIRST (atomicity: don't archive a material if PDFs can't render)
+  let vocabList: Buffer, vocabQuiz: Buffer, readingQuiz: Buffer, answerKey: Buffer;
   try {
-    [vocabList, vocabQuiz, readingQuiz, answerKey, oralQuiz] = await Promise.all([
+    [vocabList, vocabQuiz, readingQuiz, answerKey] = await Promise.all([
       buildVocabListPdf(ai.vocabulary, book.title, chapterTitle, level, author),
       buildVocabQuizPdf(ai.vocabQuestions, book.title, chapterTitle, level, author),
       buildReadingQuizPdf(ai.readingQuestions, book.title, chapterTitle, level, author),
       buildAnswerKeyPdf(ai.vocabQuestions, ai.readingQuestions, book.title, chapterTitle, level, author),
-      buildOralQuizPdf(ai.oralQuestions, book.title, chapterTitle, level, author),
     ]);
   } catch (err) {
     req.log.error({ err, bookId, chapterTitle }, "PDF generation failed");
@@ -213,7 +189,6 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
       vocabulary: ai.vocabulary,
       vocabQuestions: ai.vocabQuestions,
       readingQuestions: ai.readingQuestions,
-      oralQuestions: ai.oralQuestions,
     })
     .returning();
 
@@ -223,7 +198,6 @@ router.post("/books/:bookId/generate", async (req: Request, res: Response) => {
     vocabQuizPdfBase64: vocabQuiz.toString("base64"),
     readingQuizPdfBase64: readingQuiz.toString("base64"),
     answerKeyPdfBase64: answerKey.toString("base64"),
-    oralQuizPdfBase64: oralQuiz.toString("base64"),
   });
 });
 

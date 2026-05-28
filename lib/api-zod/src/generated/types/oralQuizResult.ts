@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface PdfBundle {
-  vocabListPdfBase64: string;
-  vocabQuizPdfBase64: string;
-  readingQuizPdfBase64: string;
-  answerKeyPdfBase64: string;
+export interface OralQuizResult {
+  pdfBase64: string;
+  questionCount: number;
 }
