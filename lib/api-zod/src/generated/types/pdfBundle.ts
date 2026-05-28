@@ -11,4 +11,5 @@ export interface PdfBundle {
   vocabQuizPdfBase64: string;
   readingQuizPdfBase64: string;
   answerKeyPdfBase64: string;
+  oralQuizPdfBase64?: string;
 }

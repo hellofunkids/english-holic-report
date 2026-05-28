@@ -86,6 +86,7 @@ export const ListMaterialsResponseItem = zod.object({
   "vocabCount": zod.number(),
   "vocabQuizCount": zod.number(),
   "readingQuizCount": zod.number(),
+  "oralQuizCount": zod.number(),
   "createdAt": zod.coerce.date()
 })
 export const ListMaterialsResponse = zod.array(ListMaterialsResponseItem)
@@ -124,7 +125,8 @@ export const DownloadMaterialPdfResponse = zod.object({
   "vocabListPdfBase64": zod.string(),
   "vocabQuizPdfBase64": zod.string(),
   "readingQuizPdfBase64": zod.string(),
-  "answerKeyPdfBase64": zod.string()
+  "answerKeyPdfBase64": zod.string(),
+  "oralQuizPdfBase64": zod.string().optional()
 })
 
 

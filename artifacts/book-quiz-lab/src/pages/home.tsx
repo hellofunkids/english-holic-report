@@ -12,6 +12,7 @@ import {
   Loader2,
   Download,
   Pencil,
+  MessageCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -450,9 +451,10 @@ function GenerateDialog({
           downloadPdfBase64(result.vocabQuizPdfBase64, `${base}_어휘퀴즈.pdf`);
           downloadPdfBase64(result.readingQuizPdfBase64, `${base}_독해퀴즈.pdf`);
           downloadPdfBase64(result.answerKeyPdfBase64, `${base}_정답지.pdf`);
+          downloadPdfBase64(result.oralQuizPdfBase64, `${base}_구두질문.pdf`);
           toast({
             title: "생성 완료!",
-            description: "4개의 PDF가 다운로드되었습니다",
+            description: "5개의 PDF가 다운로드되었습니다",
           });
           setChapterTitle("");
           onOpenChange(false);
@@ -485,7 +487,7 @@ function GenerateDialog({
             <Loader2 className="w-12 h-12 animate-spin text-[#1a2e5a] mb-4" />
             <p className="font-semibold text-[#1a2e5a]">AI가 자료를 생성 중입니다...</p>
             <p className="text-sm text-slate-500 mt-2">
-              단어장, 어휘퀴즈, 독해퀴즈, 정답지를 한 번에 만들고 있어요. 잠시만 기다려 주세요.
+              단어장, 어휘퀴즈, 독해퀴즈, 정답지, 구두질문지를 한 번에 만들고 있어요. 잠시만 기다려 주세요.
             </p>
           </div>
         ) : (
@@ -532,11 +534,12 @@ function GenerateDialog({
                 </Select>
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 space-y-1">
-                <p className="font-semibold text-[#1a2e5a]">생성되는 자료 4종</p>
+                <p className="font-semibold text-[#1a2e5a]">생성되는 자료 5종</p>
                 <p>· 단어장 (20개 단어 + 한글 발음 + 뜻 + 예문)</p>
                 <p>· 어휘 퀴즈지 (20문항, 빈칸/뜻 고르기/단어 고르기/스펠링 쓰기)</p>
                 <p>· 독해 퀴즈지 (20문항 객관식)</p>
                 <p>· 정답지 (어휘 + 독해 통합)</p>
+                <p>· 구두 독해 질문지 (10문항 + 모범 답안, 선생님용)</p>
               </div>
             </div>
             <DialogFooter>
@@ -564,9 +567,10 @@ type PdfBundleKey =
   | "vocabListPdfBase64"
   | "vocabQuizPdfBase64"
   | "readingQuizPdfBase64"
-  | "answerKeyPdfBase64";
+  | "answerKeyPdfBase64"
+  | "oralQuizPdfBase64";
 
-type LoadedBundle = Record<PdfBundleKey, string>;
+type LoadedBundle = Partial<Record<PdfBundleKey, string>>;
 
 function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId: number }) {
   const qc = useQueryClient();
@@ -594,7 +598,9 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
     vocabQuizPdfBase64: `${baseName}_어휘퀴즈.pdf`,
     readingQuizPdfBase64: `${baseName}_독해퀴즈.pdf`,
     answerKeyPdfBase64: `${baseName}_정답지.pdf`,
+    oralQuizPdfBase64: `${baseName}_구두질문.pdf`,
   };
+  const hasOral = (material.oralQuizCount ?? 0) > 0;
 
   const ensureBundle = (then: (b: LoadedBundle) => void) => {
     if (bundle) {
@@ -610,6 +616,9 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
             vocabQuizPdfBase64: result.vocabQuizPdfBase64,
             readingQuizPdfBase64: result.readingQuizPdfBase64,
             answerKeyPdfBase64: result.answerKeyPdfBase64,
+            ...(result.oralQuizPdfBase64
+              ? { oralQuizPdfBase64: result.oralQuizPdfBase64 }
+              : {}),
           };
           setBundle(b);
           then(b);
@@ -624,11 +633,19 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
   const handleDownloadAll = () => {
     setPendingAction({ kind: "download" });
     ensureBundle((b) => {
-      downloadPdfBase64(b.vocabListPdfBase64, fileNames.vocabListPdfBase64);
-      downloadPdfBase64(b.vocabQuizPdfBase64, fileNames.vocabQuizPdfBase64);
-      downloadPdfBase64(b.readingQuizPdfBase64, fileNames.readingQuizPdfBase64);
-      downloadPdfBase64(b.answerKeyPdfBase64, fileNames.answerKeyPdfBase64);
-      toast({ title: "4개의 PDF가 다운로드되었습니다" });
+      if (b.vocabListPdfBase64) downloadPdfBase64(b.vocabListPdfBase64, fileNames.vocabListPdfBase64);
+      if (b.vocabQuizPdfBase64) downloadPdfBase64(b.vocabQuizPdfBase64, fileNames.vocabQuizPdfBase64);
+      if (b.readingQuizPdfBase64) downloadPdfBase64(b.readingQuizPdfBase64, fileNames.readingQuizPdfBase64);
+      if (b.answerKeyPdfBase64) downloadPdfBase64(b.answerKeyPdfBase64, fileNames.answerKeyPdfBase64);
+      if (b.oralQuizPdfBase64) downloadPdfBase64(b.oralQuizPdfBase64, fileNames.oralQuizPdfBase64);
+      const count = [
+        b.vocabListPdfBase64,
+        b.vocabQuizPdfBase64,
+        b.readingQuizPdfBase64,
+        b.answerKeyPdfBase64,
+        b.oralQuizPdfBase64,
+      ].filter(Boolean).length;
+      toast({ title: `${count}개의 PDF가 다운로드되었습니다` });
       setPendingAction(null);
     });
   };
@@ -636,7 +653,9 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
   const handleView = (key: PdfBundleKey) => {
     setPendingAction({ kind: "view", key, filename: fileNames[key] });
     ensureBundle((b) => {
-      openPdfBase64(b[key]);
+      const data = b[key];
+      if (data) openPdfBase64(data);
+      else toast({ title: "이 자료는 이 버전에서 사용할 수 없어요", variant: "destructive" });
       setPendingAction(null);
     });
   };
@@ -679,7 +698,7 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
       </div>
 
       <p className="text-[11px] text-slate-500 mb-1.5">파일을 클릭하면 새 창에서 열립니다</p>
-      <div className="grid grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-5 gap-2 mb-3">
         <PdfBadge
           icon={BookText}
           label="단어장"
@@ -711,6 +730,14 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
           disabled={isLoading}
           onClick={() => handleView("answerKeyPdfBase64")}
         />
+        <PdfBadge
+          icon={MessageCircle}
+          label="구두질문"
+          count={hasOral ? material.oralQuizCount : undefined}
+          loading={isViewing("oralQuizPdfBase64")}
+          disabled={isLoading || !hasOral}
+          onClick={() => handleView("oralQuizPdfBase64")}
+        />
       </div>
 
       <Button
@@ -723,7 +750,7 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
         ) : (
           <Download className="w-4 h-4" />
         )}
-        4개 PDF 모두 다운로드
+        {hasOral ? "5개 PDF 모두 다운로드" : "4개 PDF 모두 다운로드"}
       </Button>
     </div>
   );

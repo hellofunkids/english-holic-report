@@ -38,6 +38,12 @@ export type ReadingQuestion = {
   answer: string;
 };
 
+export type OralQuestion = {
+  number: number;
+  question: string;
+  answer: string;
+};
+
 // ── Materials ─────────────────────────────────────────────────────────────
 export const materialsTable = pgTable("materials", {
   id: serial("id").primaryKey(),
@@ -49,6 +55,7 @@ export const materialsTable = pgTable("materials", {
   vocabulary: jsonb("vocabulary").$type<VocabEntry[]>().notNull(),
   vocabQuestions: jsonb("vocab_questions").$type<VocabQuestion[]>().notNull(),
   readingQuestions: jsonb("reading_questions").$type<ReadingQuestion[]>().notNull(),
+  oralQuestions: jsonb("oral_questions").$type<OralQuestion[]>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

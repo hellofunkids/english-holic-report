@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
-import type { VocabEntry, VocabQuestion, ReadingQuestion } from "@workspace/db";
+import type { VocabEntry, VocabQuestion, ReadingQuestion, OralQuestion } from "@workspace/db";
 
 const NAVY = "#1a2e5a";
 const GOLD = "#c9a227";
@@ -368,5 +368,103 @@ export function buildAnswerKeyPdf(
     }
 
     drawFooter(doc, `Book Quiz Lab  |  ${bookTitle}  |  Answer Key`);
+  });
+}
+
+// ── 5. Oral Comprehension Quiz PDF ────────────────────────────────────────
+// 선생님이 학생에게 구두로 질문하는 형식. 각 질문 아래 모범 답안이 함께 나옵니다.
+export function buildOralQuizPdf(
+  questions: OralQuestion[],
+  bookTitle: string,
+  chapterTitle: string,
+  level: string,
+  author?: string,
+): Promise<Buffer> {
+  return buildToBuffer((doc) => {
+    drawHeader(
+      doc,
+      "구두 독해 질문 (Oral Comprehension)",
+      bookTitle,
+      chapterTitle,
+      level,
+      author,
+    );
+
+    // Instruction band under header (헤더는 0-90, 책제목 y=102, 챕터 y=124 → 띠는 y=150부터)
+    doc
+      .rect(50, 150, doc.page.width - 100, 32)
+      .fillAndStroke("#fff8e6", GOLD);
+    doc
+      .fillColor(NAVY)
+      .font(F_BOLD)
+      .fontSize(10)
+      .text("선생님 안내", 60, 158, { lineBreak: false });
+    doc
+      .fillColor("#5a4a10")
+      .font(F_REG)
+      .fontSize(9.5)
+      .text(
+        "학생에게 아래 10개 질문을 영어로 구두로 물어보세요. 모범 답안은 채점 참고용입니다.",
+        60,
+        172,
+        { width: doc.page.width - 120, lineBreak: false },
+      );
+
+    let y = 200;
+    const pageW = doc.page.width - 100;
+    const contentW = pageW - 20;
+
+    for (const q of questions) {
+      // Measure question + answer block to avoid splitting across pages
+      doc.font(F_BOLD).fontSize(11);
+      const qH = doc.heightOfString(`Q${q.number}. ${q.question}`, {
+        width: contentW,
+        lineGap: 2,
+      });
+      doc.font(F_REG).fontSize(10);
+      const aH = doc.heightOfString(q.answer, {
+        width: contentW - 50,
+        lineGap: 2,
+      });
+      const blockH = qH + 8 + Math.max(aH, 16) + 18;
+
+      if (y + blockH > doc.page.height - 80) {
+        doc.addPage();
+        y = 50;
+      }
+
+      // Question
+      doc
+        .fillColor(NAVY)
+        .font(F_BOLD)
+        .fontSize(11)
+        .text(`Q${q.number}. ${q.question}`, 60, y, {
+          width: contentW,
+          lineGap: 2,
+        });
+      y += qH + 6;
+
+      // Answer box
+      const answerBoxH = Math.max(aH, 16) + 12;
+      doc
+        .roundedRect(60, y, contentW, answerBoxH, 4)
+        .fillAndStroke("#f3f6fb", "#dde3ef");
+      doc
+        .fillColor(GREEN)
+        .font(F_BOLD)
+        .fontSize(9)
+        .text("모범 답안", 68, y + 6, { lineBreak: false });
+      doc
+        .fillColor("#333")
+        .font(F_REG)
+        .fontSize(10)
+        .text(q.answer, 68 + 56, y + 6, {
+          width: contentW - 64,
+          lineGap: 2,
+        });
+      y += answerBoxH + 14;
+    }
+
+    drawFooter(doc, `Book Quiz Lab  |  ${bookTitle}  |  Oral Comprehension`);
   });
 }

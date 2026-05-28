@@ -242,7 +242,7 @@ components:
 
     MaterialSummary:
       type: object
-      required: [id, bookId, bookTitle, chapterTitle, level, vocabCount, vocabQuizCount, readingQuizCount, createdAt]
+      required: [id, bookId, bookTitle, chapterTitle, level, vocabCount, vocabQuizCount, readingQuizCount, oralQuizCount, createdAt]
       properties:
         id:
           type: integer
@@ -262,6 +262,8 @@ components:
           type: integer
         readingQuizCount:
           type: integer
+        oralQuizCount:
+          type: integer
         createdAt:
           type: string
           format: date-time
@@ -280,7 +282,7 @@ components:
 
     GenerateResult:
       type: object
-      required: [materialId, vocabListPdfBase64, vocabQuizPdfBase64, readingQuizPdfBase64, answerKeyPdfBase64]
+      required: [materialId, vocabListPdfBase64, vocabQuizPdfBase64, readingQuizPdfBase64, answerKeyPdfBase64, oralQuizPdfBase64]
       properties:
         materialId:
           type: integer
@@ -291,6 +293,8 @@ components:
         readingQuizPdfBase64:
           type: string
         answerKeyPdfBase64:
+          type: string
+        oralQuizPdfBase64:
           type: string
 
     PdfBundle:
@@ -304,6 +308,8 @@ components:
         readingQuizPdfBase64:
           type: string
         answerKeyPdfBase64:
+          type: string
+        oralQuizPdfBase64:
           type: string
 
     UploadRequestBody:

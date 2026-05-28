@@ -16,5 +16,6 @@ export interface MaterialSummary {
   vocabCount: number;
   vocabQuizCount: number;
   readingQuizCount: number;
+  oralQuizCount: number;
   createdAt: Date;
 }

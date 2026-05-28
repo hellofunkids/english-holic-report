@@ -39,6 +39,7 @@ export interface MaterialSummary {
   vocabCount: number;
   vocabQuizCount: number;
   readingQuizCount: number;
+  oralQuizCount: number;
   createdAt: string;
 }
 
@@ -64,6 +65,7 @@ export interface GenerateResult {
   vocabQuizPdfBase64: string;
   readingQuizPdfBase64: string;
   answerKeyPdfBase64: string;
+  oralQuizPdfBase64: string;
 }
 
 export interface PdfBundle {
@@ -71,6 +73,7 @@ export interface PdfBundle {
   vocabQuizPdfBase64: string;
   readingQuizPdfBase64: string;
   answerKeyPdfBase64: string;
+  oralQuizPdfBase64?: string;
 }
 
 export interface UploadRequestBody {
