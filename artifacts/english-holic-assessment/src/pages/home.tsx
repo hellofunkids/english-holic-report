@@ -5,6 +5,7 @@ import {
   Upload,
   X,
   FileText,
+  Download,
   Loader2,
   ClipboardCheck,
   Archive as ArchiveIcon,
@@ -20,7 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { downloadPdfBase64, openPdfBase64 } from "@/lib/download";
+import {
+  downloadPdfBase64,
+  savePdfBase64,
+  openPdfBase64,
+  isMobileDevice,
+} from "@/lib/download";
 
 const AUTHORS = ["이현진 원장", "이진미 강사", "강나영 강사"] as const;
 const DEFAULT_AUTHOR = AUTHORS[0];
@@ -177,11 +183,18 @@ export default function Home() {
       };
       setResult(data);
       setStage("done");
-      downloadPdfBase64(
-        data.pdfBase64,
-        `${safeName(studentName)}_평가서_${dateForFile()}.pdf`,
-      );
-      toast({ title: "평가서가 생성되었습니다." });
+      if (isMobileDevice()) {
+        toast({
+          title: "평가서가 생성되었습니다.",
+          description: "아래 ‘저장 / 공유’ 버튼을 눌러 PDF를 저장하세요.",
+        });
+      } else {
+        downloadPdfBase64(
+          data.pdfBase64,
+          `${safeName(studentName)}_평가서_${dateForFile()}.pdf`,
+        );
+        toast({ title: "평가서가 생성되었습니다." });
+      }
     } catch (err) {
       setStage("idle");
       toast({
@@ -194,6 +207,15 @@ export default function Home() {
   const openPdf = () => {
     if (!result) return;
     openPdfBase64(result.pdfBase64);
+  };
+
+  const savePdf = async () => {
+    if (!result) return;
+    const filename = `${safeName(studentName)}_평가서_${dateForFile()}.pdf`;
+    const shared = await savePdfBase64(result.pdfBase64, filename);
+    if (!shared) {
+      toast({ title: "PDF를 저장했습니다." });
+    }
   };
 
   return (
@@ -380,12 +402,21 @@ export default function Home() {
                   담당 {teacher} · {new Date().toLocaleDateString("ko-KR")}
                 </p>
               </div>
-              <Button
-                onClick={openPdf}
-                className="bg-[#c9a227] hover:bg-[#b08e1f] text-[#1a2e5a]"
-              >
-                <FileText className="w-4 h-4 mr-1" /> PDF 열기
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <Button
+                  onClick={openPdf}
+                  variant="outline"
+                  className="border-[#1a2e5a] text-[#1a2e5a] hover:bg-slate-50"
+                >
+                  <FileText className="w-4 h-4 mr-1" /> PDF 열기
+                </Button>
+                <Button
+                  onClick={savePdf}
+                  className="bg-[#c9a227] hover:bg-[#b08e1f] text-[#1a2e5a]"
+                >
+                  <Download className="w-4 h-4 mr-1" /> 저장 / 공유
+                </Button>
+              </div>
             </div>
 
             {typeof result.report.totalScore === "number" && (

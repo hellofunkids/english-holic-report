@@ -12,7 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { downloadPdfBase64, openPdfBase64 } from "@/lib/download";
+import {
+  savePdfBase64,
+  openPdfBase64,
+  isMobileDevice,
+} from "@/lib/download";
 
 const ACADEMY = "헬로펀키즈 주니어 어학원";
 
@@ -93,10 +97,13 @@ export default function Archive() {
       });
       if (!res.ok) throw new Error("PDF 재생성 실패");
       const data = (await res.json()) as { pdfBase64: string };
-      if (openInTab) {
+      if (openInTab || isMobileDevice()) {
+        // On mobile the user gesture is lost after the fetch, so the native
+        // share sheet can't be invoked reliably. Open the PDF in the viewer
+        // instead — the user can then save/share it from there.
         openPdfBase64(data.pdfBase64);
       } else {
-        downloadPdfBase64(
+        await savePdfBase64(
           data.pdfBase64,
           `${safeName(item.studentName)}_평가서_${dateForFile(item.createdAt)}.pdf`,
         );
