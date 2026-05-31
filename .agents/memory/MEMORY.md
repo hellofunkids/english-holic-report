@@ -1,0 +1,1 @@
+- [Vercel/CI monorepo build](vercel-monorepo-build.md) — vite configs must gate PORT/BASE_PATH behind `command==="serve"` or `pnpm run build` breaks off-Replit.
