@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import heicConvert from "heic-convert";
 import { z } from "zod/v4";
 import { db, assessmentsTable } from "@workspace/db";
@@ -17,13 +17,12 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024, files: 8 },
 });
 
-function getAnthropicClient(): Anthropic {
-  const apiKey = process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY;
-  const baseURL = process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL;
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("AI_INTEGRATIONS_ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.");
+    throw new Error("OPENAI_API_KEY 환경변수가 설정되지 않았습니다.");
   }
-  return new Anthropic({ apiKey, ...(baseURL ? { baseURL } : {}) });
+  return new OpenAI({ apiKey });
 }
 
 const ReportSchema = z.object({
@@ -136,10 +135,10 @@ router.post(
     }
 
     // Check API key early for a clear error message
-    if (!process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY) {
-      req.log.error("AI_INTEGRATIONS_ANTHROPIC_API_KEY is not set");
+    if (!process.env.OPENAI_API_KEY) {
+      req.log.error("OPENAI_API_KEY is not set");
       res.status(503).json({
-        error: "AI 서비스가 설정되지 않았습니다. AI_INTEGRATIONS_ANTHROPIC_API_KEY 환경변수를 확인해 주세요.",
+        error: "AI 서비스가 설정되지 않았습니다. OPENAI_API_KEY 환경변수를 확인해 주세요.",
       });
       return;
     }
@@ -204,20 +203,19 @@ router.post(
 
     let report: AssessmentReport;
     try {
-      const anthropic = getAnthropicClient();
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-5",
+      const openai = getOpenAIClient();
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
         max_tokens: 4096,
         messages: [
           {
             role: "user",
             content: [
               ...images.map((img) => ({
-                type: "image" as const,
-                source: {
-                  type: "base64" as const,
-                  media_type: img.mediaType,
-                  data: img.base64,
+                type: "image_url" as const,
+                image_url: {
+                  url: `data:${img.mediaType};base64,${img.base64}`,
+                  detail: "high" as const,
                 },
               })),
               { type: "text" as const, text: prompt },
@@ -226,7 +224,7 @@ router.post(
         ],
       });
 
-      const text = response.content[0]?.type === "text" ? response.content[0].text : "";
+      const text = response.choices[0]?.message?.content ?? "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("AI did not return JSON");
       const raw = JSON.parse(jsonMatch[0]);
