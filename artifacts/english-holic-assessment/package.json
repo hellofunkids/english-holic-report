@@ -9,6 +9,12 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "formidable": "^3.5.2",
+    "heic-convert": "^2.1.0",
+    "openai": "^6.42.0",
+    "pdfkit": "^0.18.0"
+  },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.4",
@@ -44,7 +50,9 @@
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@types/formidable": "^3.4.5",
     "@types/node": "catalog:",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
