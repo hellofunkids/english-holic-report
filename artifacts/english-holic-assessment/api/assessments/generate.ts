@@ -170,7 +170,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     });
 
     const text = response.choices[0]?.message?.content ?? "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleanedText = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("AI did not return JSON");
     const raw = JSON.parse(jsonMatch[0]);
     const parsed = ReportSchema.safeParse(raw);
