@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "wouter";
+import { apiUrl } from "../lib/apiBase";
 import {
   ClipboardCheck,
   Search,
@@ -60,7 +61,7 @@ export default function Archive() {
 
   const load = async () => {
     try {
-      const res = await fetch(`/api/assessments`);
+      const res = await fetch(apiUrl(`/api/assessments`));
       if (!res.ok) throw new Error("목록을 불러오지 못했습니다.");
       const data = (await res.json()) as ListItem[];
       setItems(data);
@@ -92,7 +93,7 @@ export default function Archive() {
   const handleDownload = async (item: ListItem, openInTab = false) => {
     setBusyId(item.id);
     try {
-      const res = await fetch(`/api/assessments/${item.id}/pdf`, {
+      const res = await fetch(apiUrl(`/api/assessments/${item.id}/pdf`), {
         method: "POST",
       });
       if (!res.ok) throw new Error("PDF 재생성 실패");
@@ -122,7 +123,7 @@ export default function Archive() {
     if (!confirm(`${item.studentName} 학생의 평가서를 삭제할까요?`)) return;
     setBusyId(item.id);
     try {
-      const res = await fetch(`/api/assessments/${item.id}`, {
+      const res = await fetch(apiUrl(`/api/assessments/${item.id}`), {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("삭제 실패");
