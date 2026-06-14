@@ -32,7 +32,9 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
     plugins: [
       react(),
       tailwindcss(),
-      runtimeErrorOverlay(),
+      ...(process.env.REPL_ID !== undefined
+        ? [runtimeErrorOverlay()]
+        : []),
       ...(process.env.NODE_ENV !== "production" &&
       process.env.REPL_ID !== undefined
         ? [
