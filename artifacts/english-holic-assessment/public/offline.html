@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오프라인 — 영어홀릭 평가서</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1a2e5a;
+      color: #ffffff;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(201,162,39,0.15);
+      border: 2px solid #c9a227;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.5rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #c9a227;
+      margin-bottom: 0.75rem;
+    }
+    p {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.8);
+      line-height: 1.7;
+      max-width: 320px;
+      margin-bottom: 2rem;
+    }
+    button {
+      background: #c9a227;
+      color: #1a2e5a;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="icon">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c9a227" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+      <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+      <line x1="12" y1="20" x2="12.01" y2="20"/>
+    </svg>
+  </div>
+  <h1>인터넷 연결이 없습니다</h1>
+  <p>평가서 생성을 위해 인터넷 연결이 필요합니다.<br>Wi-Fi 또는 데이터를 켠 후 다시 시도해 주세요.</p>
+  <button onclick="location.reload()">다시 시도</button>
+</body>
+</html>
