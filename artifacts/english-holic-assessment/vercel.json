@@ -4,15 +4,12 @@
   "installCommand": "pnpm install",
   "framework": null,
   "functions": {
-    "api/assessments/generate.ts": {
-      "maxDuration": 60
-    }
+    "api/assessments/generate.ts": { "maxDuration": 60 },
+    "api/assessments/index.ts": { "maxDuration": 10 },
+    "api/assessments/[id].ts": { "maxDuration": 10 },
+    "api/assessments/[id]/pdf.ts": { "maxDuration": 30 }
   },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://book-quiz-lab.replit.app/api/$1"
-    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
