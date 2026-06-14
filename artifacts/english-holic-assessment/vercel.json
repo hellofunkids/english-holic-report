@@ -4,6 +4,7 @@
   "installCommand": "pnpm install",
   "framework": null,
   "functions": {
+    "api/ping.ts": { "maxDuration": 5 },
     "api/assessments/generate.ts": { "maxDuration": 60 },
     "api/assessments/index.ts": { "maxDuration": 10 },
     "api/assessments/[id].ts": { "maxDuration": 10 },
