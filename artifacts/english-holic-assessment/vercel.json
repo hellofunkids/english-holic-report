@@ -3,12 +3,16 @@
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
   "framework": null,
-  "build": {
-    "env": {
-      "VITE_API_BASE_URL": "https://book-quiz-lab.replit.app"
+  "functions": {
+    "api/assessments/generate.ts": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://book-quiz-lab.replit.app/api/$1"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
