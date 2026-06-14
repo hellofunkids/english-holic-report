@@ -36,6 +36,13 @@ If you convert a vite config to `defineConfig(async (env) => ({...}))`, annotate
 the return as `Promise<UserConfig>` (import `type UserConfig` from "vite") or
 typecheck fails with a confusing "no properties in common with UserConfig" error.
 
+## Registered guard: `vercel-build` validation
+Root script `build:ci` = `env -u PORT -u BASE_PATH -u REPL_ID -u REPLIT_DEV_DOMAIN
+pnpm run build`. It is registered as the `vercel-build` validation step so a clean
+(Replit-env-free) production build is checked from inside the workspace before a
+Vercel deploy. If any artifact reintroduces an unconditional PORT/BASE_PATH
+dependency at build time, this run fails. Trigger it via the validation tooling.
+
 ## Verifying a Vercel build locally
 Simulate clean CI: delete `*.tsbuildinfo` + lib/artifact `dist`, then
 `env -u PORT -u BASE_PATH -u REPL_ID pnpm run build`. Full build can exceed a
