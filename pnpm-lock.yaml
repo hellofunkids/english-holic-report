@@ -458,6 +458,9 @@ importers:
       pdfkit:
         specifier: ^0.18.0
         version: 0.18.0
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -570,6 +573,9 @@ importers:
       '@types/pdfkit':
         specifier: ^0.17.6
         version: 0.17.6
+      '@types/pg':
+        specifier: ^8.11.6
+        version: 8.20.0
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
