@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import heicConvert from "heic-convert";
 import { z } from "zod";
 import { buildAssessmentReportPdf, type AssessmentReport } from "../_pdfBuilderAssessment";
+import { withDb, sendJson } from "../_db";
 
 export const config = {
   api: {
@@ -54,17 +55,6 @@ async function normalizeImage(buf: Buffer, originalname: string, mimetype: strin
 
 function capMeta(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
-}
-
-function sendJson(res: ServerResponse, status: number, body: unknown) {
-  const json = JSON.stringify(body);
-  res.writeHead(status, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  });
-  res.end(json);
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
@@ -223,5 +213,19 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  sendJson(res, 200, { pdfBase64: pdf.toString("base64"), report });
+  let assessmentId: number | undefined;
+  try {
+    assessmentId = await withDb(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO assessments (student_name, teacher_name, test_title, report)
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [studentName, teacherName, testTitle, JSON.stringify(report)],
+      );
+      return rows[0]?.id as number | undefined;
+    });
+  } catch {
+    // non-fatal: PDF already generated; continue without archive entry
+  }
+
+  sendJson(res, 200, { id: assessmentId, pdfBase64: pdf.toString("base64"), report });
 }
