@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import heicConvert from "heic-convert";
 import { z } from "zod/v4";
 import { db, assessmentsTable } from "@workspace/db";
@@ -17,10 +17,13 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024, files: 8 },
 });
 
-const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-});
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY 환경변수가 설정되지 않았습니다. 서버 관리자에게 문의하세요.");
+  }
+  return new OpenAI({ apiKey });
+}
 
 const ReportSchema = z.object({
   overallComment: z.string().min(1),
@@ -50,9 +53,11 @@ const ReportSchema = z.object({
   parentMessage: z.string().optional(),
 });
 
+type SupportedMediaType = "image/jpeg" | "image/png" | "image/webp";
+
 async function normalizeImage(file: Express.Multer.File): Promise<{
   base64: string;
-  mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+  mediaType: SupportedMediaType;
 }> {
   const name = file.originalname.toLowerCase();
   const mime = file.mimetype.toLowerCase();
@@ -74,13 +79,9 @@ async function normalizeImage(file: Express.Multer.File): Promise<{
     };
   }
 
-  let mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" =
-    "image/jpeg";
+  let mediaType: SupportedMediaType = "image/jpeg";
   if (mime.includes("png") || name.endsWith(".png")) mediaType = "image/png";
-  else if (mime.includes("webp") || name.endsWith(".webp"))
-    mediaType = "image/webp";
-  else if (mime.includes("gif") || name.endsWith(".gif"))
-    mediaType = "image/gif";
+  else if (mime.includes("webp") || name.endsWith(".webp")) mediaType = "image/webp";
 
   return {
     base64: file.buffer.toString("base64"),
@@ -130,6 +131,15 @@ router.post(
     }
     if (files.length === 0) {
       res.status(400).json({ error: "시험지 사진을 1장 이상 업로드해 주세요." });
+      return;
+    }
+
+    // Check API key early for a clear error message
+    if (!process.env.OPENAI_API_KEY) {
+      req.log.error("OPENAI_API_KEY is not set");
+      res.status(503).json({
+        error: "AI 서비스가 설정되지 않았습니다. OPENAI_API_KEY 환경변수를 확인해 주세요.",
+      });
       return;
     }
 
@@ -193,19 +203,19 @@ router.post(
 
     let report: AssessmentReport;
     try {
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
+      const openai = getOpenAIClient();
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: 4096,
         messages: [
           {
             role: "user",
             content: [
               ...images.map((img) => ({
-                type: "image" as const,
-                source: {
-                  type: "base64" as const,
-                  media_type: img.mediaType,
-                  data: img.base64,
+                type: "image_url" as const,
+                image_url: {
+                  url: `data:${img.mediaType};base64,${img.base64}`,
+                  detail: "high" as const,
                 },
               })),
               { type: "text" as const, text: prompt },
@@ -214,8 +224,7 @@ router.post(
         ],
       });
 
-      const text =
-        response.content[0]?.type === "text" ? response.content[0].text : "";
+      const text = response.choices[0]?.message?.content ?? "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("AI did not return JSON");
       const raw = JSON.parse(jsonMatch[0]);
@@ -246,9 +255,11 @@ router.post(
       }
     } catch (err) {
       req.log.error({ err }, "AI assessment generation failed");
-      res
-        .status(502)
-        .json({ error: "AI 분석 실패. 사진이 선명한지 확인 후 다시 시도해 주세요." });
+      const msg =
+        err instanceof Error && err.message.includes("OPENAI_API_KEY")
+          ? err.message
+          : "AI 분석 실패. 사진이 선명한지 확인 후 다시 시도해 주세요.";
+      res.status(502).json({ error: msg });
       return;
     }
 
