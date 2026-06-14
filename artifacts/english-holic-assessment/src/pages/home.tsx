@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Link } from "wouter";
+import { apiUrl } from "../lib/apiBase";
 import {
   BookOpen,
   Upload,
@@ -163,7 +164,7 @@ export default function Home() {
     files.forEach((f) => fd.append("images", f.file, f.file.name));
 
     try {
-      const res = await fetch(`/api/assessments/generate`, {
+      const res = await fetch(apiUrl(`/api/assessments/generate`), {
         method: "POST",
         body: fd,
       });
