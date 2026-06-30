@@ -10,10 +10,13 @@ import {
   Loader2,
   ClipboardCheck,
   Archive as ArchiveIcon,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   downloadPdfBase64,
@@ -50,18 +54,24 @@ function scoreColor(v: number): string {
 
 type Stage = "idle" | "uploading" | "done";
 
-interface ReportPreview {
+interface AssessmentReport {
   overallComment: string;
-  totalScore?: number;
+  strengths: string[];
+  improvements: string[];
+  nextSteps: string[];
   domainScores: {
     vocabulary: number;
     grammar: number;
     reading: number;
     writing: number;
   };
+  totalScore?: number;
+  bestSentence?: { sentence: string; comment: string };
+  correctionExample?: { original: string; corrected: string; reason: string };
+  parentMessage?: string;
 }
 
-const DOMAIN_LABELS: Record<keyof ReportPreview["domainScores"], string> = {
+const DOMAIN_LABELS: Record<keyof AssessmentReport["domainScores"], string> = {
   vocabulary: "어휘",
   grammar: "문법",
   reading: "독해",
@@ -84,6 +94,10 @@ function isHeicFile(file: File): boolean {
   );
 }
 
+function clampScore(v: number) {
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+
 export default function Home() {
   const [studentName, setStudentName] = useState("");
   const [bookName, setBookName] = useState("");
@@ -91,9 +105,12 @@ export default function Home() {
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [stage, setStage] = useState<Stage>("idle");
   const [result, setResult] = useState<{
+    id?: number;
     pdfBase64: string;
-    report: ReportPreview;
+    report: AssessmentReport;
   } | null>(null);
+  const [draft, setDraft] = useState<AssessmentReport | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -135,6 +152,7 @@ export default function Home() {
     setStudentName("");
     setBookName("");
     setResult(null);
+    setDraft(null);
     setStage("idle");
   };
 
@@ -179,15 +197,17 @@ export default function Home() {
         throw new Error(msg);
       }
       const data = (await res.json()) as {
+        id?: number;
         pdfBase64: string;
-        report: ReportPreview;
+        report: AssessmentReport;
       };
       setResult(data);
+      setDraft(JSON.parse(JSON.stringify(data.report)) as AssessmentReport);
       setStage("done");
       if (isMobileDevice()) {
         toast({
           title: "평가서가 생성되었습니다.",
-          description: "아래 ‘저장 / 공유’ 버튼을 눌러 PDF를 저장하세요.",
+          description: "아래 '저장 / 공유' 버튼을 눌러 PDF를 저장하세요.",
         });
       } else {
         downloadPdfBase64(
@@ -205,6 +225,37 @@ export default function Home() {
     }
   };
 
+  const handleSave = async () => {
+    if (!result || !draft) return;
+    if (!result.id) {
+      toast({ title: "저장된 ID가 없어 수정할 수 없습니다.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(apiUrl(`/api/assessments/${result.id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error ?? "저장 실패");
+      }
+      const data = (await res.json()) as { pdfBase64: string; report: AssessmentReport };
+      setResult((prev) => prev ? { ...prev, pdfBase64: data.pdfBase64, report: data.report } : null);
+      setDraft(JSON.parse(JSON.stringify(data.report)) as AssessmentReport);
+      toast({ title: "수정사항이 저장되었습니다." });
+    } catch (err) {
+      toast({
+        title: err instanceof Error ? err.message : "저장 실패",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openPdf = () => {
     if (!result) return;
     openPdfBase64(result.pdfBase64);
@@ -217,6 +268,31 @@ export default function Home() {
     if (!shared) {
       toast({ title: "PDF를 저장했습니다." });
     }
+  };
+
+  const setDraftField = <K extends keyof AssessmentReport>(
+    key: K,
+    value: AssessmentReport[K],
+  ) => setDraft((prev) => prev ? { ...prev, [key]: value } : null);
+
+  const setDraftScore = (key: keyof AssessmentReport["domainScores"], raw: string) => {
+    const n = parseInt(raw, 10);
+    if (!isNaN(n)) {
+      setDraft((prev) =>
+        prev
+          ? { ...prev, domainScores: { ...prev.domainScores, [key]: clampScore(n) } }
+          : null,
+      );
+    }
+  };
+
+  const setDraftArray = (key: "strengths" | "improvements" | "nextSteps", idx: number, value: string) => {
+    setDraft((prev) => {
+      if (!prev) return null;
+      const arr = [...prev[key]];
+      arr[idx] = value;
+      return { ...prev, [key]: arr };
+    });
   };
 
   return (
@@ -392,80 +468,359 @@ export default function Home() {
           </div>
         </div>
 
-        {result && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-[#1a2e5a] text-lg">
-                  {studentName} 학생 평가서
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  담당 {teacher} · {new Date().toLocaleDateString("ko-KR")}
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                <Button
-                  onClick={openPdf}
-                  variant="outline"
-                  className="border-[#1a2e5a] text-[#1a2e5a] hover:bg-slate-50"
-                >
-                  <FileText className="w-4 h-4 mr-1" /> PDF 열기
-                </Button>
-                <Button
-                  onClick={savePdf}
-                  className="bg-[#c9a227] hover:bg-[#b08e1f] text-[#1a2e5a]"
-                >
-                  <Download className="w-4 h-4 mr-1" /> 저장 / 공유
-                </Button>
+        {result && draft && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 pb-4 border-b border-slate-100">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-[#1a2e5a] text-lg">
+                    {studentName} 학생 평가서
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    담당 {teacher} · {new Date().toLocaleDateString("ko-KR")}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                  <Button
+                    onClick={openPdf}
+                    variant="outline"
+                    className="border-[#1a2e5a] text-[#1a2e5a] hover:bg-slate-50"
+                  >
+                    <FileText className="w-4 h-4 mr-1" /> PDF 열기
+                  </Button>
+                  <Button
+                    onClick={savePdf}
+                    className="bg-[#c9a227] hover:bg-[#b08e1f] text-[#1a2e5a]"
+                  >
+                    <Download className="w-4 h-4 mr-1" /> 저장 / 공유
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {typeof result.report.totalScore === "number" && (
-              <div className="bg-[#1a2e5a] text-white rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-baseline gap-3">
-                  <span className="text-sm">총점</span>
-                  <span className="text-xs text-slate-300">
-                    {scoreLabel(result.report.totalScore)}
-                  </span>
-                </div>
-                <span className="text-2xl font-bold text-[#c9a227]">
-                  {result.report.totalScore}점
-                </span>
-              </div>
-            )}
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList className="w-full rounded-none border-b border-slate-100 bg-slate-50 h-11 px-6 justify-start gap-1">
+                <TabsTrigger value="preview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  결과 미리보기
+                </TabsTrigger>
+                <TabsTrigger value="edit" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Pencil className="w-3.5 h-3.5 mr-1" /> 내용 수정
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(
-                Object.keys(DOMAIN_LABELS) as Array<keyof typeof DOMAIN_LABELS>
-              ).map((k) => {
-                const v = result.report.domainScores[k];
-                const color = scoreColor(v);
-                return (
-                  <div
-                    key={k}
-                    className="rounded-xl border border-slate-200 p-3"
-                  >
-                    <p className="text-xs text-slate-500">{DOMAIN_LABELS[k]}</p>
-                    <p
-                      className="text-xl font-bold mt-1"
-                      style={{ color }}
-                    >
-                      {v}점
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {scoreLabel(v)}
+              {/* 결과 미리보기 탭 */}
+              <TabsContent value="preview" className="p-6 space-y-4 mt-0">
+                {typeof result.report.totalScore === "number" && (
+                  <div className="bg-[#1a2e5a] text-white rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-sm">총점</span>
+                      <span className="text-xs text-slate-300">
+                        {scoreLabel(result.report.totalScore)}
+                      </span>
+                    </div>
+                    <span className="text-2xl font-bold text-[#c9a227]">
+                      {result.report.totalScore}점
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {(Object.keys(DOMAIN_LABELS) as Array<keyof typeof DOMAIN_LABELS>).map((k) => {
+                    const v = result.report.domainScores[k];
+                    const color = scoreColor(v);
+                    return (
+                      <div key={k} className="rounded-xl border border-slate-200 p-3">
+                        <p className="text-xs text-slate-500">{DOMAIN_LABELS[k]}</p>
+                        <p className="text-xl font-bold mt-1" style={{ color }}>
+                          {v}점
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{scoreLabel(v)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-[#1a2e5a] mb-1">총평</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                    {result.report.overallComment}
+                  </p>
+                </div>
+
+                {result.report.strengths?.length > 0 && (
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-[#1a2e5a] mb-2">잘한 점</p>
+                    <ul className="space-y-1">
+                      {result.report.strengths.map((s, i) => (
+                        <li key={i} className="text-sm text-slate-700 flex gap-2">
+                          <span className="text-[#c9a227] font-bold shrink-0">{i + 1}.</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {result.report.improvements?.length > 0 && (
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-[#1a2e5a] mb-2">보완할 점</p>
+                    <ul className="space-y-1">
+                      {result.report.improvements.map((s, i) => (
+                        <li key={i} className="text-sm text-slate-700 flex gap-2">
+                          <span className="text-[#c9a227] font-bold shrink-0">{i + 1}.</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {result.report.parentMessage && (
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-[#1a2e5a] mb-1">학부모 메시지</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                      {result.report.parentMessage}
                     </p>
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </TabsContent>
 
-            <div className="bg-slate-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-[#1a2e5a] mb-1">총평</p>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                {result.report.overallComment}
-              </p>
-            </div>
+              {/* 내용 수정 탭 */}
+              <TabsContent value="edit" className="p-6 space-y-6 mt-0">
+                {/* 점수 */}
+                <section className="space-y-3">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">점수 조정</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">총점 (0~100)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={draft.totalScore ?? ""}
+                        onChange={(e) =>
+                          setDraftField(
+                            "totalScore",
+                            e.target.value === "" ? undefined : clampScore(parseInt(e.target.value, 10)),
+                          )
+                        }
+                        className="h-9"
+                      />
+                    </div>
+                    {(Object.keys(DOMAIN_LABELS) as Array<keyof AssessmentReport["domainScores"]>).map((k) => (
+                      <div key={k} className="space-y-1">
+                        <Label className="text-xs">{DOMAIN_LABELS[k]} (0~100)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={draft.domainScores[k]}
+                          onChange={(e) => setDraftScore(k, e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* 총평 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">총평</h4>
+                  <Textarea
+                    rows={4}
+                    value={draft.overallComment}
+                    onChange={(e) => setDraftField("overallComment", e.target.value)}
+                    className="resize-none text-sm"
+                  />
+                </section>
+
+                {/* 잘한 점 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    잘한 점 (최대 3항목)
+                  </h4>
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[#c9a227] font-bold text-sm mt-2 w-4 shrink-0">{i + 1}.</span>
+                        <Textarea
+                          rows={2}
+                          value={draft.strengths[i] ?? ""}
+                          onChange={(e) => setDraftArray("strengths", i, e.target.value)}
+                          className="resize-none text-sm flex-1"
+                          placeholder={`잘한 점 ${i + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* 보완할 점 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    보완할 점 (최대 3항목)
+                  </h4>
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[#c9a227] font-bold text-sm mt-2 w-4 shrink-0">{i + 1}.</span>
+                        <Textarea
+                          rows={2}
+                          value={draft.improvements[i] ?? ""}
+                          onChange={(e) => setDraftArray("improvements", i, e.target.value)}
+                          className="resize-none text-sm flex-1"
+                          placeholder={`보완할 점 ${i + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* 다음 학습 제안 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    다음 학습 제안 (최대 4항목)
+                  </h4>
+                  <div className="space-y-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[#c9a227] font-bold text-sm mt-2 w-4 shrink-0">{i + 1}.</span>
+                        <Textarea
+                          rows={2}
+                          value={draft.nextSteps[i] ?? ""}
+                          onChange={(e) => setDraftArray("nextSteps", i, e.target.value)}
+                          className="resize-none text-sm flex-1"
+                          placeholder={`학습 제안 ${i + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* 최고의 문장 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    최고의 문장 (선택)
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">문장 (영어)</Label>
+                      <Input
+                        value={draft.bestSentence?.sentence ?? ""}
+                        onChange={(e) =>
+                          setDraftField("bestSentence", {
+                            sentence: e.target.value,
+                            comment: draft.bestSentence?.comment ?? "",
+                          })
+                        }
+                        placeholder="예: She writes very clearly."
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">코멘트</Label>
+                      <Textarea
+                        rows={2}
+                        value={draft.bestSentence?.comment ?? ""}
+                        onChange={(e) =>
+                          setDraftField("bestSentence", {
+                            sentence: draft.bestSentence?.sentence ?? "",
+                            comment: e.target.value,
+                          })
+                        }
+                        placeholder="이 문장이 좋은 이유"
+                        className="resize-none text-sm"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 교정 예시 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    교정 예시 (선택)
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">학생 문장 (원문)</Label>
+                      <Input
+                        value={draft.correctionExample?.original ?? ""}
+                        onChange={(e) =>
+                          setDraftField("correctionExample", {
+                            original: e.target.value,
+                            corrected: draft.correctionExample?.corrected ?? "",
+                            reason: draft.correctionExample?.reason ?? "",
+                          })
+                        }
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">교정 문장</Label>
+                      <Input
+                        value={draft.correctionExample?.corrected ?? ""}
+                        onChange={(e) =>
+                          setDraftField("correctionExample", {
+                            original: draft.correctionExample?.original ?? "",
+                            corrected: e.target.value,
+                            reason: draft.correctionExample?.reason ?? "",
+                          })
+                        }
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">교정 이유</Label>
+                      <Textarea
+                        rows={2}
+                        value={draft.correctionExample?.reason ?? ""}
+                        onChange={(e) =>
+                          setDraftField("correctionExample", {
+                            original: draft.correctionExample?.original ?? "",
+                            corrected: draft.correctionExample?.corrected ?? "",
+                            reason: e.target.value,
+                          })
+                        }
+                        className="resize-none text-sm"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 학부모 메시지 */}
+                <section className="space-y-2">
+                  <h4 className="text-sm font-bold text-[#1a2e5a] border-b border-slate-100 pb-2">
+                    학부모 메시지 (선택)
+                  </h4>
+                  <Textarea
+                    rows={4}
+                    value={draft.parentMessage ?? ""}
+                    onChange={(e) => setDraftField("parentMessage", e.target.value || undefined)}
+                    placeholder="어머님/아버님께 전달할 메시지를 입력하세요."
+                    className="resize-none text-sm"
+                  />
+                </section>
+
+                {/* 저장 버튼 */}
+                <div className="flex justify-end pt-2 border-t border-slate-100">
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-[#1a2e5a] hover:bg-[#152448] text-white"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> PDF 재생성 중…
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" /> 수정사항 저장 및 PDF 재생성
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
