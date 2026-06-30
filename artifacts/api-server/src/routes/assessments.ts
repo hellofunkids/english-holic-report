@@ -372,6 +372,49 @@ router.post("/assessments/:id/pdf", async (req: Request, res: Response) => {
   }
 });
 
+/** PATCH /assessments/:id — update report and regenerate PDF (no AI) */
+router.patch("/assessments/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ error: "잘못된 ID입니다." });
+    return;
+  }
+
+  const parsed = ReportSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "잘못된 평가서 데이터입니다." });
+    return;
+  }
+
+  const [row] = await db
+    .select()
+    .from(assessmentsTable)
+    .where(eq(assessmentsTable.id, id))
+    .limit(1);
+  if (!row) {
+    res.status(404).json({ error: "평가서를 찾을 수 없습니다." });
+    return;
+  }
+
+  await db
+    .update(assessmentsTable)
+    .set({ report: parsed.data })
+    .where(eq(assessmentsTable.id, id));
+
+  try {
+    const pdf = await buildAssessmentReportPdf(parsed.data, {
+      studentName: row.studentName,
+      teacherName: row.teacherName,
+      testTitle: row.testTitle,
+      date: new Date(row.createdAt).toLocaleDateString("ko-KR"),
+    });
+    res.json({ pdfBase64: pdf.toString("base64"), report: parsed.data });
+  } catch (err) {
+    req.log.error({ err, id }, "Assessment PDF rebuild failed after patch");
+    res.status(500).json({ error: "PDF 재생성 실패" });
+  }
+});
+
 /** DELETE /assessments/:id */
 router.delete("/assessments/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
