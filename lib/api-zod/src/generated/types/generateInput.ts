@@ -5,10 +5,13 @@
  * Book Quiz Lab — AI Material Generator
  * OpenAPI spec version: 0.2.0
  */
-import type { GenerateInputLevel } from './generateInputLevel';
+import type { GradeLevel } from './gradeLevel';
 
 export interface GenerateInput {
   chapterTitle: string;
-  level: GenerateInputLevel;
+  vocabLevel: GradeLevel;
+  readingLevel: GradeLevel;
   author?: string;
+  /** Optional full text of the chapter. When provided, AI generates content strictly based on this text. */
+  chapterText?: string;
 }
