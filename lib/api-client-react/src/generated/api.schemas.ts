@@ -29,12 +29,30 @@ export interface BookUpdate {
   coverImageUrl?: string;
 }
 
+export type GradeLevel = typeof GradeLevel[keyof typeof GradeLevel];
+
+
+export const GradeLevel = {
+  elementary1: 'elementary1',
+  elementary2: 'elementary2',
+  elementary3: 'elementary3',
+  elementary4: 'elementary4',
+  elementary5: 'elementary5',
+  elementary6: 'elementary6',
+  middle1: 'middle1',
+  middle2: 'middle2',
+  middle3: 'middle3',
+  high1: 'high1',
+} as const;
+
 export interface MaterialSummary {
   id: number;
   bookId: number;
   bookTitle: string;
   chapterTitle: string;
   level: string;
+  vocabLevel?: GradeLevel;
+  readingLevel?: GradeLevel;
   author?: string;
   vocabCount: number;
   vocabQuizCount: number;
@@ -42,20 +60,13 @@ export interface MaterialSummary {
   createdAt: string;
 }
 
-export type GenerateInputLevel = typeof GenerateInputLevel[keyof typeof GenerateInputLevel];
-
-
-export const GenerateInputLevel = {
-  elementary4: 'elementary4',
-  elementary5: 'elementary5',
-  elementary6: 'elementary6',
-  middle: 'middle',
-} as const;
-
 export interface GenerateInput {
   chapterTitle: string;
-  level: GenerateInputLevel;
+  vocabLevel: GradeLevel;
+  readingLevel: GradeLevel;
   author?: string;
+  /** Optional full text of the chapter. When provided, AI generates content strictly based on this text. */
+  chapterText?: string;
 }
 
 export interface GenerateResult {
@@ -73,18 +84,8 @@ export interface PdfBundle {
   answerKeyPdfBase64: string;
 }
 
-export type OralQuizInputLevel = typeof OralQuizInputLevel[keyof typeof OralQuizInputLevel];
-
-
-export const OralQuizInputLevel = {
-  elementary4: 'elementary4',
-  elementary5: 'elementary5',
-  elementary6: 'elementary6',
-  middle: 'middle',
-} as const;
-
 export interface OralQuizInput {
-  level: OralQuizInputLevel;
+  level: GradeLevel;
   author?: string;
 }
 
