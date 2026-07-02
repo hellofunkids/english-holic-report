@@ -12,6 +12,7 @@ import {
   Loader2,
   Download,
   Pencil,
+  Search,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -50,13 +51,19 @@ import {
   useDeleteMaterial,
   useDownloadMaterialPdf,
 } from "@workspace/api-client-react";
-import type { Book, MaterialSummary, GenerateInputLevel } from "@workspace/api-client-react";
+import type { Book, MaterialSummary, GradeLevel } from "@workspace/api-client-react";
 
 const LEVEL_LABELS: Record<string, string> = {
+  elementary1: "초등 1학년",
+  elementary2: "초등 2학년",
+  elementary3: "초등 3학년",
   elementary4: "초등 4학년",
   elementary5: "초등 5학년",
   elementary6: "초등 6학년",
-  middle: "중등",
+  middle1: "중등 1학년",
+  middle2: "중등 2학년",
+  middle3: "중등 3학년",
+  high1: "고등 1학년",
 };
 
 const AUTHORS = ["이현진 원장", "이진미 강사", "강나영 강사"] as const;
@@ -112,10 +119,17 @@ function BookSidebar({
   onSelect: (id: number) => void;
 }) {
   const [addOpen, setAddOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = searchQuery.trim()
+    ? books.filter((b) =>
+        b.title.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+      )
+    : books;
 
   return (
     <aside className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col h-fit lg:sticky lg:top-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-[#1a2e5a]">교재 목록</h2>
         <Button
           size="sm"
@@ -127,11 +141,25 @@ function BookSidebar({
         </Button>
       </div>
 
+      {books.length > 0 && (
+        <div className="relative mb-3">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Input
+            placeholder="교재명 검색"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+      )}
+
       {books.length === 0 ? (
         <p className="text-sm text-slate-400 text-center py-8">아직 교재가 없습니다</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-6">검색 결과가 없습니다</p>
       ) : (
         <ul className="space-y-1 max-h-[60vh] overflow-y-auto">
-          {books.map((b) => {
+          {filtered.map((b) => {
             const active = b.id === selectedBookId;
             return (
               <li key={b.id}>
@@ -419,7 +447,9 @@ function GenerateDialog({
   book: Book;
 }) {
   const [chapterTitle, setChapterTitle] = useState("");
-  const [level, setLevel] = useState<GenerateInputLevel>("elementary4");
+  const [chapterText, setChapterText] = useState("");
+  const [vocabLevel, setVocabLevel] = useState<GradeLevel>("elementary4");
+  const [readingLevel, setReadingLevel] = useState<GradeLevel>("elementary4");
   const [author, setAuthor] = useState<string>(DEFAULT_AUTHOR);
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -428,7 +458,16 @@ function GenerateDialog({
   const handleGenerate = () => {
     if (!chapterTitle.trim()) return;
     generate.mutate(
-      { bookId: book.id, data: { chapterTitle: chapterTitle.trim(), level, author } },
+      {
+        bookId: book.id,
+        data: {
+          chapterTitle: chapterTitle.trim(),
+          vocabLevel,
+          readingLevel,
+          author,
+          chapterText: chapterText.trim() || undefined,
+        },
+      },
       {
         onSuccess: (result) => {
           qc.invalidateQueries({ queryKey: getListMaterialsQueryKey(book.id) });
@@ -443,6 +482,7 @@ function GenerateDialog({
             description: "4개의 PDF가 다운로드되었습니다",
           });
           setChapterTitle("");
+          setChapterText("");
           onOpenChange(false);
         },
         onError: () =>
@@ -490,20 +530,59 @@ function GenerateDialog({
                 />
               </div>
               <div>
-                <Label>학년</Label>
-                <Select value={level} onValueChange={(v) => setLevel(v as GenerateInputLevel)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(LEVEL_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="chapter-text">
+                  챕터 내용 붙여넣기{" "}
+                  <span className="text-slate-400 font-normal">(선택 — 입력 시 AI가 이 텍스트만 참고)</span>
+                </Label>
+                <Textarea
+                  id="chapter-text"
+                  value={chapterText}
+                  onChange={(e) => setChapterText(e.target.value)}
+                  placeholder="책 챕터 내용을 여기에 붙여넣으면, AI가 해당 텍스트에 나오는 단어와 내용만으로 자료를 만듭니다."
+                  rows={5}
+                  className="resize-y text-sm"
+                />
+                {chapterText.trim() && (
+                  <p className="text-[11px] text-[#1a2e5a] mt-1 font-medium">
+                    텍스트 입력됨 — AI가 이 내용만 참고하여 정확한 자료를 생성합니다.
+                  </p>
+                )}
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>어휘 난이도</Label>
+                  <Select value={vocabLevel} onValueChange={(v) => setVocabLevel(v as GradeLevel)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>
+                          {v}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>독해 난이도</Label>
+                  <Select value={readingLevel} onValueChange={(v) => setReadingLevel(v as GradeLevel)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>
+                          {v}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 -mt-1">
+                어휘와 독해 난이도를 따로 정할 수 있어요. (예: 어휘는 쉽게, 독해는 한 단계 높게)
+              </p>
               <div>
                 <Label>담당 선생님</Label>
                 <Select value={author} onValueChange={setAuthor}>
@@ -653,7 +732,10 @@ function MaterialCard({ material, bookId }: { material: MaterialSummary; bookId:
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-[#1a2e5a]">{material.chapterTitle}</h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a2e5a]/10 text-[#1a2e5a] font-medium">
-              {LEVEL_LABELS[material.level] ?? material.level}
+              어휘 {LEVEL_LABELS[material.vocabLevel ?? material.level] ?? material.vocabLevel ?? material.level}
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a2e5a]/10 text-[#1a2e5a] font-medium">
+              독해 {LEVEL_LABELS[material.readingLevel ?? material.level] ?? material.readingLevel ?? material.level}
             </span>
             {material.author ? (
               <span className="text-xs px-2 py-0.5 rounded-full bg-[#c9a227]/15 text-[#7a6014] font-medium">
