@@ -82,6 +82,8 @@ export const ListMaterialsResponseItem = zod.object({
   "bookTitle": zod.string(),
   "chapterTitle": zod.string(),
   "level": zod.string(),
+  "vocabLevel": zod.enum(['elementary1', 'elementary2', 'elementary3', 'elementary4', 'elementary5', 'elementary6', 'middle1', 'middle2', 'middle3', 'high1']).optional(),
+  "readingLevel": zod.enum(['elementary1', 'elementary2', 'elementary3', 'elementary4', 'elementary5', 'elementary6', 'middle1', 'middle2', 'middle3', 'high1']).optional(),
   "author": zod.string().optional(),
   "vocabCount": zod.number(),
   "vocabQuizCount": zod.number(),
@@ -100,8 +102,10 @@ export const GenerateMaterialsParams = zod.object({
 
 export const GenerateMaterialsBody = zod.object({
   "chapterTitle": zod.string(),
-  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']),
-  "author": zod.string().optional()
+  "vocabLevel": zod.enum(['elementary1', 'elementary2', 'elementary3', 'elementary4', 'elementary5', 'elementary6', 'middle1', 'middle2', 'middle3', 'high1']),
+  "readingLevel": zod.enum(['elementary1', 'elementary2', 'elementary3', 'elementary4', 'elementary5', 'elementary6', 'middle1', 'middle2', 'middle3', 'high1']),
+  "author": zod.string().optional(),
+  "chapterText": zod.string().optional().describe('Optional full text of the chapter. When provided, AI generates content strictly based on this text.')
 })
 
 
@@ -113,7 +117,7 @@ export const GenerateOralQuizParams = zod.object({
 })
 
 export const GenerateOralQuizBody = zod.object({
-  "level": zod.enum(['elementary4', 'elementary5', 'elementary6', 'middle']),
+  "level": zod.enum(['elementary1', 'elementary2', 'elementary3', 'elementary4', 'elementary5', 'elementary6', 'middle1', 'middle2', 'middle3', 'high1']),
   "author": zod.string().optional()
 })
 
